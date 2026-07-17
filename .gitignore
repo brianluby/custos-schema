@@ -1,2 +1,2 @@
-
-docs/rust-tooling-baseline.md
+/target
+/.superpowers/
