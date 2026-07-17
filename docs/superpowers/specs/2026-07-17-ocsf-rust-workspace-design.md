@@ -45,17 +45,24 @@ use neutral `ocsf-*` naming — all required names verified unclaimed.
 crates/
   ocsf-core        # types, serde, validation, schemars; deps: serde,
                    # serde_json, thiserror, schemars (+optional chrono)
-  ocsf-cyclonedx   # wraps cyclonedx-bom
-  ocsf-spdx        # wraps serde-spdx
-  ocsf-osv         # wraps osv (advisory records) + adapter-owned
-                   # OSV-Scanner envelope types
-  ocsf-sarif       # wraps serde-sarif
+  ocsf-cyclonedx   # wraps serde-cyclonedx =0.10.0
+  ocsf-spdx        # wraps serde-spdx =0.10.0
+  ocsf-osv         # wraps osv 0.3 (default-features = false; schema types
+                   # only) + adapter-owned OSV-Scanner envelope types
+  ocsf-sarif       # wraps serde-sarif =0.8.0
   ocsf-vex         # OpenVEX via openvex; CycloneDX-VEX via ocsf-cyclonedx
 xtask/             # cargo xtask schemas; oracle/fixture sync tooling
 schemas/           # generated JSON Schema artifacts, committed, CI drift check
 conformance/       # vendored compiled OCSF 1.8.0 schema (oracle), pinned
 docs/              # this spec, mapping documentation
 ```
+
+Parser-crate pins follow the Custos
+[Rust Tooling Baseline](../../rust-tooling-baseline.md), which supersedes the
+earlier crate survey where they differ — notably CycloneDX uses
+serde-cyclonedx, not the official cyclonedx-bom (rejected upstream of us:
+cannot parse spec 1.6 while mainstream scanners emit 1.6+; ingest detects
+declared specVersion and fails closed on >1.6).
 
 If `ocsf-core` outgrows the maintainability bar (files ≤ 800 lines, crate
 reasonably navigable), split category crates (`ocsf-findings`,
@@ -171,7 +178,7 @@ lossy mappings are visible and auditable, never silent.
 
 | Adapter | Source crate | Maps to |
 | --- | --- | --- |
-| ocsf-cyclonedx | cyclonedx-bom | Software Inventory Info (sbom, package objects) |
+| ocsf-cyclonedx | serde-cyclonedx | Software Inventory Info (sbom, package objects) |
 | ocsf-spdx | serde-spdx | Software Inventory Info (sbom, package objects) |
 | ocsf-osv | osv + adapter-owned envelope types | Advisory records → vulnerability/cve/affected_package objects; OSV-Scanner results → Vulnerability Finding events |
 | ocsf-sarif | serde-sarif | Rule-based routing: Application Security Posture Finding (default for SAST/code-quality results, per OCSF's stated purpose for that class); Vulnerability Finding when results carry CVE/package identity; configurable overrides |
@@ -210,7 +217,11 @@ frontend) validate against these files.
 
 ## Testing Strategy
 
-TDD (test first, then implement). Coverage ≥ 80% via cargo-llvm-cov.
+TDD (test first, then implement). Runner and gates per the Custos Rust
+Tooling Baseline: cargo-nextest (plus a `cargo test --doc` step),
+`cargo llvm-cov nextest --fail-under-lines 80` as the coverage gate.
+Adapter crates (Plan 2) add cargo-fuzz targets for every untrusted-input
+parser surface, per the baseline's fuzzing obligation.
 
 - **Unit**: serde round-trips per type (Unknown/Other/Unrecognized enum
   cases, unknown fields, enum siblings); validation rules; uid/type_uid
