@@ -40,10 +40,26 @@ fn oracle_jsonschema_rejects_garbage() {
     let result = std::panic::catch_unwind(|| {
         assert_valid_against_oracle_schema(&serde_json::json!({}), "vulnerability_finding", "base")
     });
-    assert!(
-        result.is_err(),
-        "an empty event should fail validation against the vulnerability_finding base oracle schema"
+    let payload = result.expect_err(
+        "an empty event should fail validation against the vulnerability_finding base oracle schema",
     );
+    let message = panic_message(payload);
+    assert!(
+        message.contains("event failed validation against vulnerability_finding.base"),
+        "panic must come from the oracle-schema validation path, got: {message:?}"
+    );
+}
+
+/// Extract the string message from a `catch_unwind` panic payload, whether it
+/// was raised as `&'static str` or a formatted `String`.
+fn panic_message(payload: Box<dyn std::any::Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        panic!("panic payload was neither &str nor String");
+    }
 }
 
 /// The coarse type-compatibility check (`assert_matches` step 4) must
@@ -66,8 +82,49 @@ fn type_mismatch_is_detected() {
     let result = std::panic::catch_unwind(|| {
         assert_object_matches::<BadEpss>("epss");
     });
+    let payload = result.expect_err(
+        "a String field standing in for oracle epss.percentile (float_t) should be caught",
+    );
+    let message = panic_message(payload);
     assert!(
-        result.is_err(),
-        "a String field standing in for oracle epss.percentile (float_t) should be caught"
+        message.contains("attribute types do not match oracle FULL attributes"),
+        "panic must come from the coarse type-compatibility check, got: {message:?}"
+    );
+    assert!(
+        message.contains("percentile"),
+        "the type-mismatch panic must name the offending attribute, got: {message:?}"
+    );
+}
+
+/// A whole-number `Integer` on our side is a *narrowing* of the oracle's
+/// `float_t` (`Kind::Number`): it cannot deserialize a fractional value, so it
+/// is a real mismatch. This pins the removal of the old `(Number, Integer)`
+/// escape hatch — `percentile: Option<i64>` must still be rejected.
+#[test]
+fn integer_narrowing_of_oracle_float_is_rejected() {
+    #[derive(schemars::JsonSchema)]
+    #[allow(dead_code)]
+    struct BadEpss {
+        score: String,
+        percentile: Option<i64>, // wrong: oracle epss.percentile is float_t
+        version: Option<String>,
+        created_time: Option<i64>,
+        created_time_dt: Option<String>,
+    }
+
+    let result = std::panic::catch_unwind(|| {
+        assert_object_matches::<BadEpss>("epss");
+    });
+    let payload = result.expect_err(
+        "an Integer field standing in for oracle epss.percentile (float_t) should be caught",
+    );
+    let message = panic_message(payload);
+    assert!(
+        message.contains("attribute types do not match oracle FULL attributes"),
+        "panic must come from the coarse type-compatibility check, got: {message:?}"
+    );
+    assert!(
+        message.contains("percentile"),
+        "the type-mismatch panic must name the offending attribute, got: {message:?}"
     );
 }

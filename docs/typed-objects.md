@@ -30,11 +30,17 @@ correctly; `json` is not "unsupported," it is "not yet worth a struct."
 
 ## Promotion rule
 
-Promotion is **additive only**: moving an object from `json` to `typed`
-adds a struct and gains validation without changing the wire shape (the
-`json` representation was already schema-conformant), so it is never a
-breaking change for a consumer that was matching on JSON shape. Promotion
-runs in one direction — an object never moves from `typed` back to `json`.
+Promotion is **wire-compatible but potentially source-breaking**: moving an
+object from `json` to `typed` adds a struct and gains validation without
+changing the serialized JSON shape (the `json` representation was already
+schema-conformant), so it is never a breaking change on the wire for a
+consumer matching on JSON shape. It *can*, however, break Rust consumers at
+compile time: the parent field's type changes from `serde_json::Value` (or
+`Vec<serde_json::Value>`) to the new struct, so code that constructs,
+assigns, or pattern-matches that field against a `Value` must be updated.
+Treat a promotion as a minor-source-breaking change to the Rust API, not a
+purely additive one. Promotion still runs in one direction only — an object
+never moves from `typed` back to `json`.
 
 An object is a promotion candidate once it meets any one of:
 
@@ -58,18 +64,29 @@ than one.
 Every attribute marked `"requirement": "required"` on one of the 8
 supported classes' oracle base compile
 (`conformance/api/classes/*.base.json`) that carries an `object_type` must
-resolve to a `typed` row. This was verified directly against the oracle
-compiles rather than inferred from the table: the required object-valued
-attributes across all 8 classes are `metadata` (all 8 classes), `cloud`
-(all 8 classes), `finding_info` (application_security_posture_finding,
-compliance_finding, detection_finding, vulnerability_finding),
-`vulnerabilities` (vulnerability_finding, array of `vulnerability`),
-`compliance` (compliance_finding), `device` (inventory_info,
-software_info), and `user` (user_inventory) — and, one level down,
-`metadata.product` (required on `metadata` itself). All of `metadata`,
-`cloud`, `finding_info`, `vulnerability`, `compliance`, `device`, `user`,
-and `product` are `typed` below. No class-level required object reference
-is `json`-tier, so this task is not blocked.
+resolve to a `typed` row. This is verified directly against the oracle
+compiles by `crates/ocsf-core/tests/tier_policy.rs` rather than inferred
+from the table: the base-required object-valued attributes across all 8
+classes are `metadata` (all 8 classes), `finding_info`
+(application_security_posture_finding, compliance_finding,
+detection_finding, vulnerability_finding), `vulnerabilities`
+(vulnerability_finding, array of `vulnerability`), `compliance`
+(compliance_finding), `device` (inventory_info, software_info), and `user`
+(user_inventory) — and, one level down, `metadata.product` (required on
+`metadata` itself). All of `metadata`, `finding_info`, `vulnerability`,
+`compliance`, `device`, `user`, and `product` are `typed` below. No
+class-level base-required object reference is `json`-tier, so this task is
+not blocked.
+
+`cloud` is deliberately **not** in that base-required list. It is
+profile-conditional: `validation.rs` (`check_cloud_profile`) requires it
+only when the `"cloud"` profile is declared in `metadata.profiles`, on
+seven of the eight classes. `cloud_resources_inventory_info` is exempt —
+its oracle `cloud` attribute carries no `profiles` tag, so its presence is
+governed solely by that class's `at_least_one` constraint, not by the
+profile. `cloud` is `typed` below regardless (it is a high-value query
+surface), but the type system does not mark it required on the base
+compile.
 
 This rule's stated scope is the 8 classes' own required attributes (plus
 the one-level-down `metadata.product` case checked above), matching the

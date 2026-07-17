@@ -389,3 +389,18 @@ fn sample_with_default_product_fails_artifact_validation() {
     let value = serde_json::to_value(&vf).unwrap();
     assert_invalid_against_artifact(&value, "vulnerability_finding");
 }
+
+#[test]
+fn sample_with_null_product_name_fails_artifact_validation() {
+    // A nullable attribute set to `null` (`{"name": null}`) must NOT satisfy
+    // the `product` object's `at_least_one: [name, uid]` constraint. A bare
+    // `{"required": ["name"]}` clause only checks key presence and would let
+    // an explicit null through; the injected `{"not": {"type": "null"}}`
+    // predicate closes that hole. Inject `metadata.product.name = null` into
+    // an otherwise valid event and assert the external validator rejects it.
+    let mut value = serde_json::to_value(sample_vf()).unwrap();
+    value["metadata"]["product"]["name"] = Value::Null;
+    // Guard: no `uid` present, so the only satisfiable branch is `name`.
+    assert!(value["metadata"]["product"].get("uid").is_none());
+    assert_invalid_against_artifact(&value, "vulnerability_finding");
+}

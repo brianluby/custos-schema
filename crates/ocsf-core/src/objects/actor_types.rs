@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::enums::ocsf_enum;
 use crate::objects::RiskLevelId;
-use crate::validation::{Validate, ValidationReport, check_other_collisions};
+use crate::validation::{Validate, ValidationReport, check_nested, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized user type (OCSF `user.type_id`).
@@ -315,7 +315,8 @@ impl User {
 
 impl Validate for User {
     /// Enforces the oracle's `user` constraint (`at_least_one` of `account`,
-    /// `name`, `uid`) and the extension-key collision check.
+    /// `name`, `uid`) and the extension-key collision check, then recurses
+    /// into the constrained typed children (`account`, `org`, `groups`).
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[
@@ -324,6 +325,17 @@ impl Validate for User {
             ("uid", self.uid.is_some()),
         ]);
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(account) = &self.account {
+            check_nested(account, "account", &mut r);
+        }
+        if let Some(org) = &self.org {
+            check_nested(org, "org", &mut r);
+        }
+        if let Some(groups) = &self.groups {
+            for (i, group) in groups.iter().enumerate() {
+                check_nested(group, &format!("groups[{i}]"), &mut r);
+            }
+        }
         r
     }
 }
@@ -338,6 +350,59 @@ mod tests {
         assert_eq!(UserTypeId::from(2), UserTypeId::Admin);
         assert_eq!(UserTypeId::from(0), UserTypeId::Unknown);
         assert_eq!(UserTypeId::from(1234), UserTypeId::Unrecognized(1234));
+    }
+
+    #[test]
+    fn user_recurses_into_invalid_account() {
+        // Parent's own `at_least_one` is satisfied (name set) so only the
+        // nested account's failure can invalidate it.
+        let user = User {
+            name: Some("alice".into()),
+            account: Some(Account::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = user.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("account."))
+        );
+    }
+
+    #[test]
+    fn user_recurses_into_invalid_org() {
+        let user = User {
+            name: Some("alice".into()),
+            org: Some(Organization::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = user.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("org."))
+        );
+    }
+
+    #[test]
+    fn user_recurses_into_invalid_group_entry() {
+        let user = User {
+            name: Some("alice".into()),
+            groups: Some(vec![Group::default()]), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = user.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("groups[0]."))
+        );
     }
 
     #[test]

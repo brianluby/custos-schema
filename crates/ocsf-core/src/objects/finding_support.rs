@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::base::Timestamp;
 use crate::enums::{SeverityId, ocsf_enum};
 use crate::objects::{Group, KbArticle, Product, User};
-use crate::validation::{Validate, ValidationReport, check_other_collisions};
+use crate::validation::{Validate, ValidationReport, check_nested, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized resource role (OCSF `resource_details.role_id`).
@@ -112,6 +112,55 @@ pub struct FindingInfo {
     /// Unknown/future fields, preserved losslessly.
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl FindingInfo {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "analytic",
+        "attack_graph",
+        "attacks",
+        "created_time",
+        "created_time_dt",
+        "data_sources",
+        "desc",
+        "first_seen_time",
+        "first_seen_time_dt",
+        "kill_chain",
+        "last_seen_time",
+        "last_seen_time_dt",
+        "modified_time",
+        "modified_time_dt",
+        "product",
+        "product_uid",
+        "related_analytics",
+        "related_events",
+        "related_events_count",
+        "src_url",
+        "tags",
+        "title",
+        "traits",
+        "types",
+        "uid",
+        "uid_alt",
+    ];
+}
+
+impl Validate for FindingInfo {
+    /// The `finding_info` object carries no oracle `at_least_one`/`just_one`
+    /// constraint (`uid` is a plain required field enforced by the type
+    /// system). Runs the extension-key collision check and recurses into the
+    /// constrained typed child `product`.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(product) = &self.product {
+            check_nested(product, "product", &mut r);
+        }
+        r
+    }
 }
 
 /// OCSF `resource_details` object: describes details about the resource
@@ -249,11 +298,18 @@ impl ResourceDetails {
 
 impl Validate for ResourceDetails {
     /// Enforces the oracle's `resource_details` constraint (`at_least_one` of
-    /// `name`, `uid`) and the extension-key collision check.
+    /// `name`, `uid`) and the extension-key collision check, then recurses
+    /// into the constrained typed children (`group`, `owner`).
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(group) = &self.group {
+            check_nested(group, "group", &mut r);
+        }
+        if let Some(owner) = &self.owner {
+            check_nested(owner, "owner", &mut r);
+        }
         r
     }
 }
@@ -318,6 +374,45 @@ pub struct Compliance {
     pub other: serde_json::Map<String, serde_json::Value>,
 }
 
+impl Compliance {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "assessments",
+        "category",
+        "checks",
+        "compliance_references",
+        "compliance_standards",
+        "control",
+        "control_parameters",
+        "desc",
+        "requirements",
+        "standards",
+        "status",
+        "status_code",
+        "status_detail",
+        "status_details",
+        "status_id",
+    ];
+}
+
+impl Validate for Compliance {
+    /// The `compliance` object carries no oracle `at_least_one`/`just_one`
+    /// constraint. Runs the extension-key collision check and recurses into
+    /// each constrained typed `checks` entry.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(checks) = &self.checks {
+            for (i, check) in checks.iter().enumerate() {
+                check_nested(check, &format!("checks[{i}]"), &mut r);
+            }
+        }
+        r
+    }
+}
+
 /// OCSF `check` object: describes an individual compliance check, its
 /// evaluated resource, and its result.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
@@ -359,6 +454,38 @@ pub struct Check {
     /// Unknown/future fields, preserved losslessly.
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Check {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "desc",
+        "name",
+        "resource",
+        "severity",
+        "severity_id",
+        "standards",
+        "status",
+        "status_id",
+        "uid",
+        "version",
+    ];
+}
+
+impl Validate for Check {
+    /// The `check` object carries no oracle `at_least_one`/`just_one`
+    /// constraint. Runs the extension-key collision check and recurses into
+    /// the constrained typed child `resource`.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(resource) = &self.resource {
+            check_nested(resource, "resource", &mut r);
+        }
+        r
+    }
 }
 
 #[cfg(test)]
@@ -414,6 +541,95 @@ mod tests {
         assert!(ok.validate().is_valid());
         ok.other.insert("uid".to_string(), serde_json::Value::Null);
         assert!(ok.validate().errors.iter().any(|e| e.attribute == "other"));
+    }
+
+    #[test]
+    fn resource_details_recurses_into_invalid_children() {
+        use crate::validation::Validate;
+        // group edge
+        let rd = ResourceDetails {
+            name: Some("bucket".into()),
+            group: Some(Group::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = rd.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("group."))
+        );
+        // owner edge
+        let rd = ResourceDetails {
+            name: Some("bucket".into()),
+            owner: Some(User::default()), // invalid: no account/name/uid
+            ..Default::default()
+        };
+        let report = rd.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("owner."))
+        );
+    }
+
+    #[test]
+    fn check_recurses_into_invalid_resource() {
+        use crate::validation::Validate;
+        let check = Check {
+            resource: Some(ResourceDetails::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = check.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("resource."))
+        );
+    }
+
+    #[test]
+    fn compliance_recurses_into_invalid_check_entry() {
+        use crate::validation::Validate;
+        let compliance = Compliance {
+            checks: Some(vec![Check {
+                resource: Some(ResourceDetails::default()), // invalid grandchild
+                ..Default::default()
+            }]),
+            ..Default::default()
+        };
+        let report = compliance.validate();
+        assert!(!report.is_valid());
+        // Nested path threads through: checks[0].resource.<name, uid>
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("checks[0].resource."))
+        );
+    }
+
+    #[test]
+    fn finding_info_recurses_into_invalid_product() {
+        use crate::validation::Validate;
+        let fi = FindingInfo {
+            uid: "finding-1".into(),
+            product: Some(Product::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = fi.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("product."))
+        );
     }
 
     #[test]

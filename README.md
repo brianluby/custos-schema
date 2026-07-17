@@ -49,8 +49,11 @@ API is stable.
 
 Every object each class can reach (123 objects total, per
 `conformance/closure-report.json`) is represented — either as a fully typed
-Rust struct or as passthrough JSON. See [Tier policy](#tier-policy) for
-which is which and why.
+Rust struct or as passthrough JSON. The design spec's pre-implementation
+estimate was ~119–132 objects (the range reflected uncertainty over profile
+inclusions); 123 is the measured count of the realized closure, recorded in
+`conformance/closure-report.json`. See [Tier policy](#tier-policy) for which
+is which and why.
 
 ## Quick example
 
@@ -125,7 +128,8 @@ cargo xtask schemas --check
 ```
 
 The `crates/ocsf-core/tests/conformance*.rs` suite asserts every typed
-struct's field names, required set, and coarse types against the oracle,
+struct's field names, set of required fields, and coarse types against the
+oracle,
 and every `ocsf_enum!` against the oracle's enum vocabulary. `sync-oracle`
 should only be re-run on a deliberate OCSF version bump, since it rewrites
 the ground truth the conformance tests check against.

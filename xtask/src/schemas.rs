@@ -4,6 +4,7 @@ use ocsf_core::validation::ranges;
 use ocsf_core::{discovery::*, findings::*};
 use schemars::schema_for;
 use serde_json::{Map, Value, json};
+use std::collections::BTreeSet;
 use std::fs;
 
 /// (class_name, generated schema, class_uid, category_uid) for every
@@ -95,15 +96,39 @@ fn constraint_all_of(oracle: &Value) -> Vec<Value> {
     let mut all_of = Vec::new();
     if let Some(list) = cons.get("at_least_one").and_then(Value::as_array) {
         all_of.push(json!({
-            "anyOf": list.iter().map(|a| json!({"required": [a]})).collect::<Vec<_>>()
+            "anyOf": list.iter().map(present_non_null).collect::<Vec<_>>()
         }));
     }
     if let Some(list) = cons.get("just_one").and_then(Value::as_array) {
         all_of.push(json!({
-            "oneOf": list.iter().map(|a| json!({"required": [a]})).collect::<Vec<_>>()
+            "oneOf": list.iter().map(present_non_null).collect::<Vec<_>>()
         }));
     }
     all_of
+}
+
+/// A single presence clause for one `at_least_one`/`just_one` member.
+///
+/// `{"required": [attr]}` alone only checks that the key exists — a nullable
+/// attribute set to `null` (e.g. `{"name": null}` on `product`) would still
+/// satisfy it. Pairing `required` with a `{"not": {"type": "null"}}` predicate
+/// on the same attribute makes the clause demand a present *and* non-null
+/// value, matching the Rust `Option::is_some` presence convention that
+/// `Validate` enforces. Preserves the surrounding `anyOf`/`oneOf` semantics —
+/// this only tightens each individual branch.
+fn present_non_null(attr: &Value) -> Value {
+    let Some(name) = attr.as_str() else {
+        // Non-string constraint member (not present in the vendored oracle);
+        // degrade to a bare presence check rather than emitting a malformed
+        // `properties` key.
+        return json!({ "required": [attr] });
+    };
+    let mut properties = serde_json::Map::new();
+    properties.insert(name.to_string(), json!({ "not": { "type": "null" } }));
+    json!({
+        "required": [name],
+        "properties": properties,
+    })
 }
 
 /// Inject OCSF root-class constraints schemars cannot express, read from the
@@ -257,13 +282,16 @@ pub fn generate(check: bool) -> Result<()> {
         fs::create_dir_all(&schemas_dir)?;
     }
     let mut drift = Vec::new();
+    let mut expected: BTreeSet<String> = BTreeSet::new();
     for (class, mut schema, class_uid, category_uid) in all() {
         let oracle = read_oracle_json(&format!("conformance/api/classes/{class}.base.json"))?;
         inject_constraints(&oracle, &mut schema)?;
         inject_class_uid_consts(class, &oracle, &mut schema, class_uid, category_uid)?;
         inject_nested_object_constraints(&mut schema)?;
         inject_scalar_ranges(class, &mut schema);
-        let path = schemas_dir.join(format!("{class}.schema.json"));
+        let file_name = format!("{class}.schema.json");
+        expected.insert(file_name.clone());
+        let path = schemas_dir.join(&file_name);
         let new = serde_json::to_string_pretty(&schema)? + "\n";
         let old = fs::read_to_string(&path).unwrap_or_default();
         if check {
@@ -275,6 +303,29 @@ pub fn generate(check: bool) -> Result<()> {
             println!("wrote {}", path.display());
         }
     }
+
+    // Reconcile stale artifacts: any `*.schema.json` in `schemas/` that no
+    // longer corresponds to a current class (e.g. a class removed from the
+    // list, or renamed) must not linger. In write mode it is deleted; in
+    // `--check` mode an unknown file is drift, so CI fails until it is
+    // regenerated away. Git provides rollback if a deletion was unintended.
+    if schemas_dir.exists() {
+        for entry in fs::read_dir(&schemas_dir)? {
+            let entry = entry?;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if !name.ends_with(".schema.json") || expected.contains(&name) {
+                continue;
+            }
+            let path = entry.path();
+            if check {
+                drift.push(path.display().to_string());
+            } else {
+                fs::remove_file(&path)?;
+                println!("removed stale {}", path.display());
+            }
+        }
+    }
+
     if check && !drift.is_empty() {
         anyhow::bail!("schema drift, run `cargo xtask schemas`: {drift:?}");
     }

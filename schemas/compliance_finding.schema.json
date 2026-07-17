@@ -8,11 +8,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
@@ -406,11 +420,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
             },
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
@@ -518,36 +546,85 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "ip": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "ip"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
             },
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "hostname": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "hostname"
               ]
             },
             {
+              "properties": {
+                "instance_uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "instance_uid"
               ]
             },
             {
+              "properties": {
+                "interface_uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "interface_uid"
               ]
             },
             {
+              "properties": {
+                "interface_name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "interface_name"
               ]
@@ -1282,11 +1359,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
@@ -1414,11 +1505,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
             },
             {
+              "properties": {
+                "src_url": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "src_url"
               ]
@@ -1827,11 +1932,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
@@ -1984,11 +2103,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
@@ -2118,11 +2251,25 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]
@@ -2353,16 +2500,37 @@
         {
           "anyOf": [
             {
+              "properties": {
+                "account": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "account"
               ]
             },
             {
+              "properties": {
+                "name": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "name"
               ]
             },
             {
+              "properties": {
+                "uid": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              },
               "required": [
                 "uid"
               ]

@@ -397,6 +397,10 @@ impl Validate for ComplianceFinding {
                 ("confidence_id", self.confidence_id.is_some()),
                 ("observables", self.observables.is_some()),
                 ("remediation", self.remediation.is_some()),
+                (
+                    "resources",
+                    self.resources.as_ref().is_some_and(|v| !v.is_empty()),
+                ),
             ],
         );
         r

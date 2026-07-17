@@ -415,6 +415,11 @@ impl Validate for DetectionFinding {
                 ("confidence_id", self.confidence_id.is_some()),
                 ("observables", self.observables.is_some()),
                 ("evidences", self.evidences.is_some()),
+                ("is_alert", self.is_alert.is_some()),
+                (
+                    "resources",
+                    self.resources.as_ref().is_some_and(|v| !v.is_empty()),
+                ),
             ],
         );
         r

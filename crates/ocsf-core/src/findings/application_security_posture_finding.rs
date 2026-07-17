@@ -408,6 +408,16 @@ impl Validate for ApplicationSecurityPostureFinding {
                 ("confidence_id", self.confidence_id.is_some()),
                 ("observables", self.observables.is_some()),
                 ("remediation", self.remediation.is_some()),
+                ("application", self.application.is_some()),
+                ("compliance", self.compliance.is_some()),
+                (
+                    "resources",
+                    self.resources.as_ref().is_some_and(|v| !v.is_empty()),
+                ),
+                (
+                    "vulnerabilities",
+                    self.vulnerabilities.as_ref().is_some_and(|v| !v.is_empty()),
+                ),
             ],
         );
         r

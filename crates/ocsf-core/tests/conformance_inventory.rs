@@ -72,6 +72,9 @@ fn field_names_match_schema() {
         "resource_details",
         ResourceDetails::FIELD_NAMES,
     );
+    assert_field_names_match::<FindingInfo>("object", "finding_info", FindingInfo::FIELD_NAMES);
+    assert_field_names_match::<Compliance>("object", "compliance", Compliance::FIELD_NAMES);
+    assert_field_names_match::<Check>("object", "check", Check::FIELD_NAMES);
 }
 
 #[test]

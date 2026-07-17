@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::base::Timestamp;
 use crate::enums::ocsf_enum;
 use crate::objects::{Cve, Cwe, Os, Product};
-use crate::validation::{Validate, ValidationReport, check_other_collisions};
+use crate::validation::{Validate, ValidationReport, check_nested, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized install state (OCSF `install_state_id`), shared by the
@@ -88,6 +88,49 @@ pub struct Advisory {
     pub other: serde_json::Map<String, serde_json::Value>,
 }
 
+impl Advisory {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "avg_timespan",
+        "bulletin",
+        "classification",
+        "created_time",
+        "created_time_dt",
+        "desc",
+        "install_state",
+        "install_state_id",
+        "is_superseded",
+        "modified_time",
+        "modified_time_dt",
+        "os",
+        "product",
+        "references",
+        "related_cves",
+        "related_cwes",
+        "size",
+        "src_url",
+        "title",
+        "uid",
+    ];
+}
+
+impl Validate for Advisory {
+    /// The `advisory` object carries no oracle `at_least_one`/`just_one`
+    /// constraint (`uid` is a plain required field enforced by the type
+    /// system). Runs the extension-key collision check and recurses into the
+    /// constrained typed child `product`.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(product) = &self.product {
+            check_nested(product, "product", &mut r);
+        }
+        r
+    }
+}
+
 /// OCSF `kb_article` object: metadata describing a patch or an update
 /// applicable to an endpoint.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
@@ -168,7 +211,8 @@ impl KbArticle {
 
 impl Validate for KbArticle {
     /// Enforces the oracle's `kb_article` constraint (`at_least_one` of `uid`,
-    /// `src_url`) and the extension-key collision check.
+    /// `src_url`) and the extension-key collision check, then recurses into
+    /// the constrained typed child `product`.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[
@@ -176,6 +220,9 @@ impl Validate for KbArticle {
             ("src_url", self.src_url.is_some()),
         ]);
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(product) = &self.product {
+            check_nested(product, "product", &mut r);
+        }
         r
     }
 }
@@ -203,6 +250,40 @@ mod tests {
         let out = serde_json::to_value(&advisory).unwrap();
         assert_eq!(out["future_field"], 1);
         assert!(out.get("title").is_none());
+    }
+
+    #[test]
+    fn advisory_recurses_into_invalid_product() {
+        let advisory = Advisory {
+            uid: "GHSA-xxxx".into(),
+            product: Some(Product::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = advisory.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("product."))
+        );
+    }
+
+    #[test]
+    fn kb_article_recurses_into_invalid_product() {
+        let kb = KbArticle {
+            uid: Some("KB123".into()),         // satisfies parent at_least_one
+            product: Some(Product::default()), // invalid: no name/uid
+            ..Default::default()
+        };
+        let report = kb.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("product."))
+        );
     }
 
     #[test]

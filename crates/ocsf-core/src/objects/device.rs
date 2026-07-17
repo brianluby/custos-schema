@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::base::Timestamp;
 use crate::enums::ocsf_enum;
 use crate::objects::{Container, Group, Image, Organization, User};
-use crate::validation::{Validate, ValidationReport, check_other_collisions};
+use crate::validation::{Validate, ValidationReport, check_nested, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized risk level (OCSF `risk_level_id`), shared by the `device`
@@ -408,6 +408,23 @@ impl Validate for Device {
             ("interface_name", self.interface_name.is_some()),
         ]);
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        if let Some(container) = &self.container {
+            check_nested(container, "container", &mut r);
+        }
+        if let Some(groups) = &self.groups {
+            for (i, group) in groups.iter().enumerate() {
+                check_nested(group, &format!("groups[{i}]"), &mut r);
+            }
+        }
+        if let Some(org) = &self.org {
+            check_nested(org, "org", &mut r);
+        }
+        if let Some(owner) = &self.owner {
+            check_nested(owner, "owner", &mut r);
+        }
+        if let Some(pool) = &self.pool {
+            check_nested(pool, "pool", &mut r);
+        }
         r
     }
 }
@@ -435,6 +452,62 @@ mod tests {
         };
         d.other.insert("uid".to_string(), serde_json::Value::Null);
         assert!(d.validate().errors.iter().any(|e| e.attribute == "other"));
+    }
+
+    #[test]
+    fn device_recurses_into_invalid_typed_children() {
+        // Parent's own `at_least_one` is satisfied (hostname set); each nested
+        // child below is invalid on its own contract and must fail the parent
+        // under its pinned nested path.
+        let base = Device {
+            hostname: Some("h".into()),
+            ..Default::default()
+        };
+        let cases: &[(&str, Device)] = &[
+            (
+                "container.",
+                Device {
+                    container: Some(Container::default()),
+                    ..base.clone()
+                },
+            ),
+            (
+                "groups[0].",
+                Device {
+                    groups: Some(vec![Group::default()]),
+                    ..base.clone()
+                },
+            ),
+            (
+                "org.",
+                Device {
+                    org: Some(Organization::default()),
+                    ..base.clone()
+                },
+            ),
+            (
+                "owner.",
+                Device {
+                    owner: Some(User::default()),
+                    ..base.clone()
+                },
+            ),
+            (
+                "pool.",
+                Device {
+                    pool: Some(Group::default()),
+                    ..base.clone()
+                },
+            ),
+        ];
+        for (path, device) in cases {
+            let report = device.validate();
+            assert!(!report.is_valid(), "expected {path} child to fail parent");
+            assert!(
+                report.errors.iter().any(|e| e.attribute.starts_with(path)),
+                "missing nested error under {path}"
+            );
+        }
     }
 
     #[test]

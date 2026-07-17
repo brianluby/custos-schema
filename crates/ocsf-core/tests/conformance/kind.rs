@@ -48,18 +48,21 @@ impl std::fmt::Display for Kind {
 
 impl Kind {
     /// Whether `ours` is an acceptable schemars rendering of something the
-    /// oracle typed as `oracle`. Not symmetric: `Number`/`Integer` only
-    /// matches oracle-number-vs-our-integer (a whole-number `float_t`
-    /// modeled as an integer on our side is a narrowing, not a lossy one;
-    /// the reverse — oracle wants a whole integer but we render a float —
-    /// is a real mismatch and is caught).
+    /// oracle typed as `oracle`. Not symmetric: only an `Any` schema on
+    /// *our* side is an unconditional escape hatch (a `serde_json::Value`
+    /// placeholder faithfully accepts whatever the oracle demands). An `Any`
+    /// on the *oracle* side (`json_t`) is not: if the oracle attribute is
+    /// free-form JSON, a concretely-typed field on our side (e.g. `String`)
+    /// narrows it and cannot round-trip arbitrary oracle values, so that is a
+    /// real mismatch and is caught. Likewise, oracle `float_t` (`Number`)
+    /// modeled as our `Integer` is a narrowing that cannot deserialize a
+    /// fractional value — also caught.
     pub fn compatible(oracle: &Kind, ours: &Kind) -> bool {
-        use Kind::{Any, Array, Integer, Number, Object, ObjectOrEnumRef};
+        use Kind::{Any, Array, Integer, Object, ObjectOrEnumRef};
         match (oracle, ours) {
-            (Any, _) | (_, Any) => true,
+            (_, Any) => true,
             (ObjectOrEnumRef, Object | Integer | ObjectOrEnumRef) => true,
             (Object | Integer, ObjectOrEnumRef) => true,
-            (Number, Integer) => true,
             (Array(a), Array(b)) => Kind::compatible(a, b),
             (a, b) => a == b,
         }

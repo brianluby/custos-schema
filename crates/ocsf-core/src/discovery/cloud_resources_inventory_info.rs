@@ -412,6 +412,12 @@ impl Validate for CloudResourcesInventoryInfo {
                     "resources",
                     self.resources.as_ref().is_some_and(|v| !v.is_empty()),
                 ),
+                ("cloud", self.cloud.is_some()),
+                ("container", self.container.is_some()),
+                ("database", self.database.is_some()),
+                ("databucket", self.databucket.is_some()),
+                ("idp", self.idp.is_some()),
+                ("table", self.table.is_some()),
             ],
         );
         r

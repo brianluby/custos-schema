@@ -54,6 +54,20 @@ pub fn sync() -> Result<()> {
     let mut queue: VecDeque<String> = VecDeque::new();
     let mut seen: BTreeSet<String> = BTreeSet::new();
 
+    // Clear the managed conformance API and JSON Schema trees before
+    // re-vendoring so classes/objects removed upstream (or dropped from
+    // `CLASSES`) do not linger as stale files. This is an in-place refresh,
+    // not a transactional staging swap: a failed fetch partway through can
+    // leave the trees partially rewritten. That is an accepted trade-off —
+    // git provides rollback (`git checkout conformance/`) if a sync aborts or
+    // misbehaves; full transactional staging is deliberately not implemented.
+    for managed in ["conformance/api", "conformance/jsonschema"] {
+        let dir = crate::workspace_root().join(managed);
+        if dir.exists() {
+            fs::remove_dir_all(&dir).with_context(|| format!("clearing {}", dir.display()))?;
+        }
+    }
+
     for class in CLASSES {
         let base = fetch(&format!("{api}/classes/{class}?profiles="))?;
         let full = fetch(&format!("{api}/classes/{class}?profiles={FULL_PROFILES}"))?;

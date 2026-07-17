@@ -361,6 +361,7 @@ impl Validate for SoftwareInfo {
                 ("confidence_id", self.confidence_id.is_some()),
                 ("observables", self.observables.is_some()),
                 ("package", self.package.is_some()),
+                ("sbom", self.sbom.is_some()),
             ],
         );
         r
