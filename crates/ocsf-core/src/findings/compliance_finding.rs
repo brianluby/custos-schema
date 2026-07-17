@@ -375,6 +375,8 @@ impl Validate for ComplianceFinding {
         );
         check_cloud_profile(&self.metadata, self.cloud.is_some(), &mut r);
         check_nested(&self.metadata, "metadata", &mut r);
+        check_nested(&self.finding_info, "finding_info", &mut r);
+        check_nested(&self.compliance, "compliance", &mut r);
         if let Some(device) = &self.device {
             check_nested(device, "device", &mut r);
         }

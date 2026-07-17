@@ -601,3 +601,19 @@ fn regression_nested_metadata_product_constraint_is_invalid() {
             .any(|e| e.attribute.starts_with("metadata.product"))
     );
 }
+
+#[test]
+fn regression_nested_finding_info_product_constraint_is_invalid() {
+    // finding_info.product must satisfy its at_least_one(name, uid) constraint,
+    // and violations must surface under `finding_info.product.*`.
+    let mut vf = sample_vf();
+    vf.finding_info.product = Some(Product::default());
+    let report = vf.validate();
+    assert!(!report.is_valid());
+    assert!(
+        report
+            .errors
+            .iter()
+            .any(|e| e.attribute.starts_with("finding_info.product"))
+    );
+}
