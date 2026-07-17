@@ -193,6 +193,14 @@ output; the supported version is asserted in fixture tests.
 No shared adapter trait upfront; conventions first, extract a trait when the
 third adapter proves the shape.
 
+Support crates (per the tooling baseline; never hand-rolled): packageurl 0.6
+for purl parsing, cvss 2.2 for CVSS vector parsing/scoring, spdx 0.13 for
+license expressions. Fail-closed input rules: CycloneDX declared specVersion
+> 1.6 rejected; SPDX 2.3 JSON only (tag-value, RDF, SPDX 3.0 rejected).
+Every adapter parser surface gets a cargo-fuzz target. xtask deliberately
+uses ureq rather than the baseline's reqwest: it is dev tooling outside the
+product dependency tree, and ureq avoids pulling tokio into a build tool.
+
 Adapter-populated provenance: `metadata.product` (source tool),
 `metadata.original_time` where available, raw source identifiers into
 `unmapped`/`other` when they have no OCSF home.
