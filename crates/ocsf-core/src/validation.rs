@@ -10,7 +10,10 @@ use thiserror::Error;
 /// A single validation finding: the attribute it concerns and why.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationIssue {
-    /// The OCSF attribute name the issue concerns (e.g. `"severity_id"`).
+    /// The attribute(s) the issue concerns. For field-level issues, a single OCSF
+    /// attribute name (possibly a nested path like `"vulnerabilities[0].cve"`).
+    /// For multi-attribute constraint issues (at_least_one, just_one), a
+    /// comma-joined list of candidate attribute names (e.g. `"cve, title"`).
     pub attribute: String,
     /// A human-readable description of the issue.
     pub message: String,
@@ -157,5 +160,12 @@ mod tests {
         r.error("time", "missing");
         let err = r.into_result().unwrap_err();
         assert_eq!(err.errors.len(), 1);
+    }
+
+    #[test]
+    fn constraint_issue_attribute_is_joined_candidate_list() {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("cve", false), ("title", false)]);
+        assert_eq!(r.errors[0].attribute, "cve, title");
     }
 }
