@@ -198,6 +198,9 @@ pub struct ComplianceFinding {
     /// The Vendor Attributes object can be used to represent values of attributes populated by the Vendor/Finding Provider.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vendor_attributes: Option<serde_json::Value>,
+    /// Unknown/future fields, preserved losslessly.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
 }
 
 impl OcsfClass for ComplianceFinding {
@@ -284,6 +287,7 @@ impl ComplianceFinding {
             type_uid: Self::CLASS_UID as i32 * 100 + i32::from(activity_id),
             unmapped: None,
             vendor_attributes: None,
+            other: serde_json::Map::new(),
         }
     }
 }

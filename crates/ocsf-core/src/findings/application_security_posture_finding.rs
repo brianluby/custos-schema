@@ -200,6 +200,9 @@ pub struct ApplicationSecurityPostureFinding {
     /// This object describes vulnerabilities reported in a security finding.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vulnerabilities: Option<Vec<Vulnerability>>,
+    /// Unknown/future fields, preserved losslessly.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
 }
 
 impl OcsfClass for ApplicationSecurityPostureFinding {
@@ -285,6 +288,7 @@ impl ApplicationSecurityPostureFinding {
             unmapped: None,
             vendor_attributes: None,
             vulnerabilities: None,
+            other: serde_json::Map::new(),
         }
     }
 }

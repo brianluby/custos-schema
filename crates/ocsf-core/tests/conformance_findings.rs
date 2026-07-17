@@ -11,7 +11,7 @@ use conformance::*;
 use ocsf_core::base::OcsfClass;
 use ocsf_core::enums::SeverityId;
 use ocsf_core::findings::*;
-use ocsf_core::objects::{Cve, FindingInfo, Metadata, Product, RiskLevelId, Vulnerability};
+use ocsf_core::objects::{Cloud, Cve, FindingInfo, Metadata, Product, RiskLevelId, Vulnerability};
 use ocsf_core::validation::Validate;
 
 // ---------------------------------------------------------------------------
@@ -287,4 +287,196 @@ fn detection_finding_type_uid_is_correct() {
     );
     assert_eq!(f.type_uid(), 200403);
     assert!(f.validate().is_valid(), "errors: {:?}", f.validate().errors);
+}
+
+// ---------------------------------------------------------------------------
+// ComplianceFinding: full sample lifecycle (profile-conditional requirement,
+// serde round-trip), mirroring the VulnerabilityFinding coverage above.
+// ---------------------------------------------------------------------------
+
+fn sample_cf() -> ComplianceFinding {
+    ComplianceFinding::new(
+        1_752_000_000_000,
+        ComplianceFindingActivityId::Create,
+        SeverityId::High,
+        Metadata::new(Product::named("test")),
+        FindingInfo {
+            title: Some("t".into()),
+            uid: "f-1".into(),
+            ..Default::default()
+        },
+        Default::default(),
+    )
+}
+
+#[test]
+fn compliance_finding_profile_requirement_is_conditional() {
+    // Without the cloud profile, omitting `cloud` is valid.
+    let cf = sample_cf();
+    assert!(
+        cf.validate().is_valid(),
+        "errors: {:?}",
+        cf.validate().errors
+    );
+
+    // Declaring the cloud profile makes `cloud` required.
+    let mut cf = sample_cf();
+    cf.metadata.profiles = Some(vec!["cloud".into()]);
+    assert!(!cf.validate().is_valid());
+
+    // Supplying `cloud` satisfies the conditional requirement.
+    cf.cloud = Some(Cloud {
+        provider: "AWS".into(),
+        ..Default::default()
+    });
+    assert!(
+        cf.validate().is_valid(),
+        "errors: {:?}",
+        cf.validate().errors
+    );
+}
+
+#[test]
+fn compliance_finding_roundtrips_through_json() {
+    let cf = sample_cf();
+    let value = serde_json::to_value(&cf).unwrap();
+    let back: ComplianceFinding = serde_json::from_value(value).unwrap();
+    assert_eq!(cf, back);
+}
+
+// ---------------------------------------------------------------------------
+// DetectionFinding: full sample lifecycle (profile-conditional requirement,
+// serde round-trip).
+// ---------------------------------------------------------------------------
+
+fn sample_df() -> DetectionFinding {
+    DetectionFinding::new(
+        1_752_000_000_000,
+        DetectionFindingActivityId::Create,
+        SeverityId::High,
+        Metadata::new(Product::named("test")),
+        FindingInfo {
+            title: Some("t".into()),
+            uid: "f-1".into(),
+            ..Default::default()
+        },
+    )
+}
+
+#[test]
+fn detection_finding_profile_requirement_is_conditional() {
+    // Without the cloud profile, omitting `cloud` is valid.
+    let df = sample_df();
+    assert!(
+        df.validate().is_valid(),
+        "errors: {:?}",
+        df.validate().errors
+    );
+
+    // Declaring the cloud profile makes `cloud` required.
+    let mut df = sample_df();
+    df.metadata.profiles = Some(vec!["cloud".into()]);
+    assert!(!df.validate().is_valid());
+
+    // Supplying `cloud` satisfies the conditional requirement.
+    df.cloud = Some(Cloud {
+        provider: "AWS".into(),
+        ..Default::default()
+    });
+    assert!(
+        df.validate().is_valid(),
+        "errors: {:?}",
+        df.validate().errors
+    );
+}
+
+#[test]
+fn detection_finding_roundtrips_through_json() {
+    let df = sample_df();
+    let value = serde_json::to_value(&df).unwrap();
+    let back: DetectionFinding = serde_json::from_value(value).unwrap();
+    assert_eq!(df, back);
+}
+
+// ---------------------------------------------------------------------------
+// ApplicationSecurityPostureFinding: full sample lifecycle (profile-
+// conditional requirement, serde round-trip). `ApplicationSecurityPostureFinding::new`
+// alone is intentionally invalid (its `at_least_one` constraint over
+// [application, compliance, remediation, vulnerabilities] is unmet), so the
+// sample here also supplies a valid `vulnerabilities` entry.
+// ---------------------------------------------------------------------------
+
+fn sample_aspf() -> ApplicationSecurityPostureFinding {
+    let mut f = ApplicationSecurityPostureFinding::new(
+        1_752_000_000_000,
+        ApplicationSecurityPostureFindingActivityId::Create,
+        SeverityId::High,
+        Metadata::new(Product::named("test")),
+        FindingInfo {
+            title: Some("t".into()),
+            uid: "f-1".into(),
+            ..Default::default()
+        },
+    );
+    f.vulnerabilities = Some(vec![Vulnerability {
+        cve: Some(Cve {
+            uid: "CVE-2021-44228".into(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }]);
+    f
+}
+
+#[test]
+fn application_security_posture_finding_profile_requirement_is_conditional() {
+    // Without the cloud profile, omitting `cloud` is valid.
+    let f = sample_aspf();
+    assert!(f.validate().is_valid(), "errors: {:?}", f.validate().errors);
+
+    // Declaring the cloud profile makes `cloud` required.
+    let mut f = sample_aspf();
+    f.metadata.profiles = Some(vec!["cloud".into()]);
+    assert!(!f.validate().is_valid());
+
+    // Supplying `cloud` satisfies the conditional requirement.
+    f.cloud = Some(Cloud {
+        provider: "AWS".into(),
+        ..Default::default()
+    });
+    assert!(f.validate().is_valid(), "errors: {:?}", f.validate().errors);
+}
+
+#[test]
+fn application_security_posture_finding_roundtrips_through_json() {
+    let f = sample_aspf();
+    let value = serde_json::to_value(&f).unwrap();
+    let back: ApplicationSecurityPostureFinding = serde_json::from_value(value).unwrap();
+    assert_eq!(f, back);
+}
+
+// ---------------------------------------------------------------------------
+// Unknown-field preservation: the `#[serde(flatten)] other` catch-all must
+// losslessly round-trip attributes this codebase doesn't model yet, for
+// every Findings event class. Proven here for VulnerabilityFinding, as
+// representative of the shared pattern applied identically to all four.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn vulnerability_finding_roundtrips_unknown_fields() {
+    let vf = sample_vf();
+    let mut value = serde_json::to_value(&vf).unwrap();
+    value
+        .as_object_mut()
+        .unwrap()
+        .insert("x_future".to_string(), serde_json::json!({"a": 1}));
+
+    let back: VulnerabilityFinding = serde_json::from_value(value).unwrap();
+    assert_eq!(
+        back.other.get("x_future"),
+        Some(&serde_json::json!({"a": 1}))
+    );
+
+    let out = serde_json::to_value(&back).unwrap();
+    assert_eq!(out["x_future"], serde_json::json!({"a": 1}));
 }
