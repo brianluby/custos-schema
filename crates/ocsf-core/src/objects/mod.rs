@@ -17,7 +17,9 @@ pub use cloud::Cloud;
 pub use container::{Container, Image};
 pub use cve::{Cve, Cvss, Cwe, Epss};
 pub use device::{Device, DeviceTypeId, Os, OsTypeId, RiskLevelId};
-pub use finding_support::{Check, Compliance, FindingInfo, ResourceDetails, RoleId, StatusId};
+pub use finding_support::{
+    Check, Compliance, ComplianceStatusId, FindingInfo, ResourceDetails, RoleId,
+};
 pub use metadata::Metadata;
 pub use package::{Package, PackageTypeId, Sbom, SbomTypeId};
 pub use product::Product;

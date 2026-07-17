@@ -18,7 +18,7 @@ ocsf_enum! {
 ocsf_enum! {
     /// Normalized compliance/check status (OCSF `status_id`), shared by the
     /// `compliance` and `check` objects.
-    pub enum StatusId {
+    pub enum ComplianceStatusId {
         Pass = 1,
         Warning = 2,
         Fail = 3,
@@ -264,7 +264,7 @@ pub struct Compliance {
     pub status_details: Option<Vec<String>>,
     /// The normalized status identifier of the compliance check.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status_id: Option<StatusId>,
+    pub status_id: Option<ComplianceStatusId>,
     /// Unknown/future fields, preserved losslessly.
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
@@ -300,7 +300,7 @@ pub struct Check {
     pub status: Option<String>,
     /// The normalized status identifier of the compliance check.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status_id: Option<StatusId>,
+    pub status_id: Option<ComplianceStatusId>,
     /// The unique identifier of the compliance check within its standard
     /// or framework.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -326,9 +326,12 @@ mod tests {
 
     #[test]
     fn status_id_roundtrips_known_and_unrecognized() {
-        assert_eq!(StatusId::from(3), StatusId::Fail);
-        assert_eq!(StatusId::from(0), StatusId::Unknown);
-        assert_eq!(StatusId::from(1234), StatusId::Unrecognized(1234));
+        assert_eq!(ComplianceStatusId::from(3), ComplianceStatusId::Fail);
+        assert_eq!(ComplianceStatusId::from(0), ComplianceStatusId::Unknown);
+        assert_eq!(
+            ComplianceStatusId::from(1234),
+            ComplianceStatusId::Unrecognized(1234)
+        );
     }
 
     #[test]
@@ -356,7 +359,7 @@ mod tests {
     fn compliance_roundtrips_unknown_fields() {
         let json = r#"{"status_id":1,"future_field":1}"#;
         let c: Compliance = serde_json::from_str(json).unwrap();
-        assert_eq!(c.status_id, Some(StatusId::Pass));
+        assert_eq!(c.status_id, Some(ComplianceStatusId::Pass));
         assert_eq!(c.other["future_field"], 1);
         let out = serde_json::to_value(&c).unwrap();
         assert_eq!(out["future_field"], 1);
@@ -370,5 +373,15 @@ mod tests {
         assert_eq!(c.other["future_field"], 1);
         let out = serde_json::to_value(&c).unwrap();
         assert_eq!(out["future_field"], 1);
+    }
+
+    #[test]
+    fn compliance_status_id_default_is_unknown() {
+        assert_eq!(ComplianceStatusId::default(), ComplianceStatusId::Unknown);
+    }
+
+    #[test]
+    fn compliance_default_constructible() {
+        let _c = Compliance::default();
     }
 }

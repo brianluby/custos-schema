@@ -111,7 +111,7 @@ fn role_id_matches() {
 #[test]
 fn status_id_matches() {
     assert_enum_matches(
-        StatusId::KNOWN,
+        ComplianceStatusId::KNOWN,
         &Oracle::object_full("compliance"),
         "status_id",
     );
