@@ -212,7 +212,7 @@ fn vulnerability_finding_empty_vulnerabilities_is_invalid() {
 fn vulnerability_finding_nested_vulnerability_errors_surface() {
     let mut vf = sample_vf();
     // A vulnerability with none of advisory/cve/cwe violates its just_one
-    // constraint; the error must surface on the parent under `vulnerabilities`.
+    // constraint; the error must surface at the indexed child path.
     vf.vulnerabilities = vec![Vulnerability::default()];
     let report = vf.validate();
     assert!(!report.is_valid());
@@ -220,7 +220,7 @@ fn vulnerability_finding_nested_vulnerability_errors_surface() {
         report
             .errors
             .iter()
-            .any(|e| e.attribute == "vulnerabilities")
+            .any(|e| e.attribute == "vulnerabilities[0].advisory, cve, cwe")
     );
 }
 

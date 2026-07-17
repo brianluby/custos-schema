@@ -125,15 +125,12 @@ ocsf_enum! {
 // ---------------------------------------------------------------------------
 
 /// Recurse into each reported vulnerability, surfacing its constraint errors
-/// on the parent under the `vulnerabilities` attribute with a `[i].attr`
-/// path prefix (the nested-issue convention pinned in `validation.rs`).
+/// on the parent at the indexed `vulnerabilities[i].attr` path (the
+/// nested-issue convention pinned in `validation.rs`).
 pub(crate) fn check_vulnerabilities(vulns: &[Vulnerability], r: &mut ValidationReport) {
     for (i, v) in vulns.iter().enumerate() {
         for e in v.validate().errors {
-            r.error(
-                "vulnerabilities",
-                format!("[{i}].{}: {}", e.attribute, e.message),
-            );
+            r.error(&format!("vulnerabilities[{i}].{}", e.attribute), e.message);
         }
     }
 }
