@@ -3,6 +3,7 @@
 
 pub mod base;
 pub mod enums;
+pub mod findings;
 pub mod objects;
 pub mod validation;
 
