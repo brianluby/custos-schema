@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 use crate::base::{OcsfClass, Timestamp};
 use crate::discovery::DiscoveryStatusId;
 use crate::enums::{SeverityId, ocsf_enum};
-use crate::findings::{
-    FindingActionId, FindingConfidenceId, FindingDispositionId, check_cloud_profile, check_uids,
-    warn_recommended,
-};
+use crate::findings::{FindingActionId, FindingConfidenceId, FindingDispositionId};
 use crate::objects::{Cloud, Device, Metadata, Package, Product, RiskLevelId, Sbom};
-use crate::validation::{Validate, ValidationReport};
+use crate::validation::{
+    Validate, ValidationReport, check_cloud_profile, check_uids, warn_recommended,
+};
 
 ocsf_enum! {
     /// Normalized activity for `software_info` (`activity_id`).

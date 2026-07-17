@@ -5,13 +5,15 @@ use crate::base::{OcsfClass, Timestamp};
 use crate::enums::{SeverityId, ocsf_enum};
 use crate::findings::{
     FindingActionId, FindingConfidenceId, FindingDispositionId, FindingStatusId,
-    check_cloud_profile, check_uids, check_vulnerabilities, warn_recommended,
+    check_vulnerabilities,
 };
 use crate::objects::{
     Cloud, Compliance, Device, FindingInfo, Metadata, Remediation, ResourceDetails, RiskLevelId,
     Vulnerability,
 };
-use crate::validation::{Validate, ValidationReport};
+use crate::validation::{
+    Validate, ValidationReport, check_cloud_profile, check_uids, warn_recommended,
+};
 
 ocsf_enum! {
     /// Normalized activity for `application_security_posture_finding` (`activity_id`).

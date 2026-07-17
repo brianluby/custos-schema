@@ -7,6 +7,9 @@
 
 use thiserror::Error;
 
+use crate::base::OcsfClass;
+use crate::objects::Metadata;
+
 /// A single validation finding: the attribute it concerns and why.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationIssue {
@@ -122,6 +125,68 @@ pub struct ValidationError {
 pub trait Validate {
     /// Run every applicable check and return the aggregated report.
     fn validate(&self) -> ValidationReport;
+}
+
+// ---------------------------------------------------------------------------
+// Shared validation helpers. Kept `pub(crate)`; each class's `Validate` impl
+// composes the checks it needs. Neutral home (not `findings` or `discovery`)
+// so both modules can depend on them without creating a cross-module
+// dependency between the two.
+// ---------------------------------------------------------------------------
+
+/// Record UID-consistency errors: `class_uid`/`category_uid` must equal the
+/// class constants, and `type_uid` must equal the normative
+/// `class_uid * 100 + activity_id`. `ev`'s trait method
+/// [`OcsfClass::type_uid`] recomputes the expected value from `activity_id`
+/// (disambiguated from the `type_uid` field by call syntax).
+pub(crate) fn check_uids<C: OcsfClass>(
+    ev: &C,
+    class_uid: i32,
+    category_uid: i32,
+    type_uid: i32,
+    r: &mut ValidationReport,
+) {
+    if class_uid != C::CLASS_UID as i32 {
+        r.error("class_uid", format!("must be {}", C::CLASS_UID));
+    }
+    if category_uid != C::CATEGORY_UID as i32 {
+        r.error("category_uid", format!("must be {}", C::CATEGORY_UID));
+    }
+    let expected = OcsfClass::type_uid(ev) as i32;
+    if type_uid != expected {
+        r.error(
+            "type_uid",
+            format!("must equal class_uid * 100 + activity_id ({expected})"),
+        );
+    }
+}
+
+/// Enforce the `cloud`-profile conditional requirement: when `"cloud"` is in
+/// `metadata.profiles`, the `cloud` attribute must be present. Across all four
+/// Findings classes, `cloud` is the only attribute the FULL (all-profiles)
+/// compile marks required that the BASE compile does not.
+pub(crate) fn check_cloud_profile(
+    metadata: &Metadata,
+    cloud_present: bool,
+    r: &mut ValidationReport,
+) {
+    let cloud_profile_active = metadata
+        .profiles
+        .as_ref()
+        .is_some_and(|profiles| profiles.iter().any(|p| p == "cloud"));
+    if cloud_profile_active && !cloud_present {
+        r.error("cloud", "required when the \"cloud\" profile is active");
+    }
+}
+
+/// Emit a warning for each recommended attribute that is absent. Callers pass
+/// the handful of highest-value recommended attributes for their class.
+pub(crate) fn warn_recommended(r: &mut ValidationReport, recommended: &[(&str, bool)]) {
+    for (name, present) in recommended {
+        if !present {
+            r.warn(name, "recommended attribute omitted");
+        }
+    }
 }
 
 #[cfg(test)]

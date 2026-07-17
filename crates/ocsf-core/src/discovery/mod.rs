@@ -5,7 +5,7 @@
 //! wire, exactly like the Findings classes in [`crate::findings`]: every OCSF
 //! attribute of a class is a field on that class's struct (no shared base
 //! struct, no `serde(flatten)` of a common base). Shared UID-consistency and
-//! cloud-profile validation logic is reused from [`crate::findings`] rather
+//! cloud-profile validation logic is reused from [`crate::validation`] rather
 //! than duplicated: `check_uids`/`check_cloud_profile`/`warn_recommended` are
 //! `pub(crate)` there and fully generic (no Finding-specific coupling), so
 //! this module imports them directly instead of redefining byte-identical

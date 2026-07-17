@@ -4,11 +4,9 @@ use serde::{Deserialize, Serialize};
 use crate::base::{OcsfClass, Timestamp};
 use crate::discovery::DiscoveryStatusId;
 use crate::enums::{SeverityId, ocsf_enum};
-use crate::findings::{
-    FindingActionId, FindingConfidenceId, FindingDispositionId, check_uids, warn_recommended,
-};
+use crate::findings::{FindingActionId, FindingConfidenceId, FindingDispositionId};
 use crate::objects::{Cloud, Container, Device, Metadata, ResourceDetails, RiskLevelId};
-use crate::validation::{Validate, ValidationReport};
+use crate::validation::{Validate, ValidationReport, check_uids, warn_recommended};
 
 ocsf_enum! {
     /// Normalized activity for `cloud_resources_inventory_info` (`activity_id`).
@@ -324,7 +322,10 @@ impl Validate for CloudResourcesInventoryInfo {
                 ("disposition_id", self.disposition_id.is_some()),
                 ("confidence_id", self.confidence_id.is_some()),
                 ("observables", self.observables.is_some()),
-                ("resources", self.resources.is_some()),
+                (
+                    "resources",
+                    self.resources.as_ref().is_some_and(|v| !v.is_empty()),
+                ),
             ],
         );
         r
