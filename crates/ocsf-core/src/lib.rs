@@ -6,6 +6,7 @@ pub mod discovery;
 pub mod enums;
 pub mod findings;
 pub mod objects;
+pub mod time;
 pub mod validation;
 
 /// The OCSF schema version these types are modeled against.

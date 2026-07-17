@@ -1,0 +1,32 @@
+{
+  "activity_id": 1,
+  "category_uid": 2,
+  "class_uid": 2002,
+  "finding_info": {
+    "title": "t",
+    "uid": "f-1"
+  },
+  "metadata": {
+    "product": {
+      "name": "test"
+    },
+    "version": "1.8.0"
+  },
+  "severity_id": 4,
+  "status_id": 4242,
+  "time": 1752000000000,
+  "type_uid": 200201,
+  "vulnerabilities": [
+    {
+      "cve": {
+        "uid": "CVE-2021-44228"
+      }
+    }
+  ],
+  "x_future": {
+    "nested": [
+      1,
+      2
+    ]
+  }
+}
