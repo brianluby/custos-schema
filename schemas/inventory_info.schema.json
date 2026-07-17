@@ -1,0 +1,1941 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": true,
+  "definitions": {
+    "Account": {
+      "additionalProperties": true,
+      "description": "OCSF `account` object: a user account, cloud account, subscription, or billing unit, e.g. an AWS account or a GCP project.",
+      "properties": {
+        "is_disabled": {
+          "description": "Indicates if the account is disabled.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_locked": {
+          "description": "Indicates if the account is locked, e.g. due to too many failed logins.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_on_premises_sync_enabled": {
+          "description": "Indicates whether synchronization with an on-premises directory service is enabled, e.g. Microsoft Entra Connect.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "labels": {
+          "description": "The list of labels associated with the account.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the account, e.g. a GCP project name or an AWS account name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "description": "The list of key:value tags associated with the account.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The account type, normalized to the caption of `type_id`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AccountTypeId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The normalized account type identifier."
+        },
+        "uid": {
+          "description": "The unique identifier of the account, e.g. an AWS Account ID or a GCP Project ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "AccountTypeId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "Cloud": {
+      "additionalProperties": true,
+      "description": "OCSF `cloud` object: describes details about the cloud service or infrastructure that is the subject of an event, such as the account, region, and availability zone.",
+      "properties": {
+        "account": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Account"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The cloud account, subscription, or billing unit where the event or finding was created."
+        },
+        "cloud_partition": {
+          "description": "The logical grouping or isolated segment within a cloud provider's infrastructure, e.g. an AWS partition (`aws`, `aws-cn`, `aws-us-gov`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "org": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Organization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The organizational unit or management structure that governs the account, subscription, or project where the event or finding was created."
+        },
+        "project_uid": {
+          "description": "The unique identifier of a Cloud project.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider": {
+          "description": "The unique name of the Cloud services provider, e.g. `AWS`, `Azure`, `GCP`, or `Oracle Cloud`.",
+          "type": "string"
+        },
+        "region": {
+          "description": "The cloud region where the event or finding was created, as defined by the cloud provider.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "zone": {
+          "description": "The availability zone in the cloud region where the event or finding was created, as defined by the cloud provider.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "type": "object"
+    },
+    "Container": {
+      "additionalProperties": true,
+      "description": "OCSF `container` object: describes an instance of a container, a prepackaged, portable system image that runs isolated on an existing system using a container runtime like `containerd`.",
+      "properties": {
+        "hash": {
+          "description": "The commit hash of the image, or the SHA256 hash of the container."
+        },
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Image"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The container image used as a template to run the container."
+        },
+        "labels": {
+          "description": "The list of labels associated with the container.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The container name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "network_driver": {
+          "description": "The network driver used by the container, e.g. `bridge`, `overlay`, `host`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orchestrator": {
+          "description": "The orchestrator managing the container, e.g. `ECS`, `EKS`, `K8s`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pod_uuid": {
+          "description": "The unique identifier of the pod (or equivalent) that the container is executing on.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "runtime": {
+          "description": "The backend running the container, e.g. `containerd` or `cri-o`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size": {
+          "description": "The size of the container image.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "tag": {
+          "description": "The tag used by the container; can indicate version, format, or OS.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "description": "The list of key:value tags associated with the container.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "The full container unique identifier for this instantiation of the container.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Device": {
+      "additionalProperties": true,
+      "description": "OCSF `device` object: describes characteristics of a device, endpoint, virtual machine, or other resource that is the subject of an event.",
+      "properties": {
+        "agent_list": {
+          "description": "A list of `agent` objects associated with the device.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "autoscale_uid": {
+          "description": "The unique identifier of the cloud autoscale configuration.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "boot_time": {
+          "description": "The time the system was booted.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "boot_time_dt": {
+          "description": "`boot_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "boot_uid": {
+          "description": "A unique identifier of the device that changes after every reboot.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "container": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Container"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The information describing an instance of a container running on the device."
+        },
+        "created_time": {
+          "description": "The time when the device was known to have been created.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "created_time_dt": {
+          "description": "`created_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "desc": {
+          "description": "The description of the device, ordinarily as reported by the operating system.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "domain": {
+          "description": "The network domain where the device resides, e.g. `work.example.com`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "eid": {
+          "description": "The Embedded Identity Document: a unique serial number that identifies an eSIM-enabled device.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "first_seen_time": {
+          "description": "The initial discovery time of the device.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "first_seen_time_dt": {
+          "description": "`first_seen_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groups": {
+          "description": "The group names to which the device belongs.",
+          "items": {
+            "$ref": "#/definitions/Group"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "hostname": {
+          "description": "The device hostname.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hw_info": {
+          "description": "The endpoint hardware information."
+        },
+        "hypervisor": {
+          "description": "The name of the hypervisor running on the device, e.g. `Xen`, `VMware`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "iccid": {
+          "description": "The Integrated Circuit Card Identification of a mobile device.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Image"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The image used as a template to run the virtual machine."
+        },
+        "imei": {
+          "description": "The International Mobile Equipment Identity associated with the device.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "imei_list": {
+          "description": "The International Mobile Equipment Identity values associated with the device.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "instance_uid": {
+          "description": "The unique identifier of a VM instance.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "interface_name": {
+          "description": "The name of the network interface, e.g. `eth2`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "interface_uid": {
+          "description": "The unique identifier of the network interface.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ip": {
+          "description": "The device IP address, in either IPv4 or IPv6 format.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "is_backed_up": {
+          "description": "Indicates whether the device has a backup enabled, e.g. an automated snapshot or a cloud backup.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_compliant": {
+          "description": "The event occurred on a compliant device.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_managed": {
+          "description": "The event occurred on a managed device.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_mobile_account_active": {
+          "description": "Indicates whether the device has an active mobile account.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_personal": {
+          "description": "The event occurred on a personal device.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_shared": {
+          "description": "The event occurred on a shared device.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_supervised": {
+          "description": "The event occurred on a supervised device (e.g. MDM-managed).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_trusted": {
+          "description": "The event occurred on a trusted device.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "last_seen_time": {
+          "description": "The most recent discovery time of the device.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "last_seen_time_dt": {
+          "description": "`last_seen_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "location": {
+          "description": "The geographical location of the device."
+        },
+        "mac": {
+          "description": "The Media Access Control (MAC) address of the endpoint.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mac_vendor": {
+          "description": "The vendor or manufacturer of the endpoint's network interface controller (NIC), as identified from the MAC address.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "meid": {
+          "description": "The Mobile Equipment Identifier, a unique number identifying a CDMA mobile device.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "description": "The model of the device, e.g. `ThinkPad X1 Carbon`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modified_time": {
+          "description": "The time when the device was last known to have been modified.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "modified_time_dt": {
+          "description": "`modified_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The alternate device name, ordinarily as assigned by an administrator.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "namespace_pid": {
+          "description": "If running under a process namespace (such as in a container), the process identifier within that namespace.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "network_interfaces": {
+          "description": "The physical or virtual network interfaces associated with the device, one for each unique MAC/IP/hostname/name combination.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "org": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Organization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Organization and org unit related to the device."
+        },
+        "os": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Os"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The endpoint operating system."
+        },
+        "os_machine_uuid": {
+          "description": "The operating system assigned Machine ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The identity of the service or user account that owns the endpoint or was last logged into it."
+        },
+        "pool": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Group"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The pool of desktops or virtual machines to which the endpoint belongs."
+        },
+        "region": {
+          "description": "The region where the virtual machine is located, e.g. an AWS Region.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "risk_level": {
+          "description": "The risk level, normalized to the caption of `risk_level_id`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "risk_level_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RiskLevelId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The normalized risk level id."
+        },
+        "risk_score": {
+          "description": "The risk score as reported by the event source.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "subnet": {
+          "description": "The subnet mask.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subnet_uid": {
+          "description": "The unique identifier of a virtual subnet.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The device type, e.g. `server`, `desktop`, `laptop`, `mobile`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type_id": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/DeviceTypeId"
+            }
+          ],
+          "description": "The device type ID."
+        },
+        "udid": {
+          "description": "The Apple assigned Unique Device Identifier (UDID).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "The unique identifier of the device, e.g. the Windows TargetSID or AWS EC2 ARN.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid_alt": {
+          "description": "An alternate unique identifier of the device, if any, e.g. the ActiveDirectory DN.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vendor_name": {
+          "description": "The vendor for the device, e.g. `Dell` or `Lenovo`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vlan_uid": {
+          "description": "The Virtual LAN identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vpc_uid": {
+          "description": "The unique identifier of the Virtual Private Cloud (VPC).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "zone": {
+          "description": "The network zone or LAN segment.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "type_id"
+      ],
+      "type": "object"
+    },
+    "DeviceTypeId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "DiscoveryStatusId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "FindingActionId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "FindingConfidenceId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "FindingDispositionId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "Group": {
+      "additionalProperties": true,
+      "description": "OCSF `group` object: the grouping of individuals with similar rights, interests, or objectives, such as an administrative or membership group.",
+      "properties": {
+        "desc": {
+          "description": "The group description.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "domain": {
+          "description": "The domain where the group is defined, e.g. the LDAP or Active Directory domain.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The group name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "privileges": {
+          "description": "The group privileges.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The type of the group.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "The unique identifier of the group, e.g. a Windows SID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid_alt": {
+          "description": "The alternate unique identifier of the group.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Image": {
+      "additionalProperties": true,
+      "description": "OCSF `image` object: describes the container image used as a template to instantiate a container.",
+      "properties": {
+        "labels": {
+          "description": "The list of labels associated with the image.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The image name, e.g. `elixir`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "The full path to the image file.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tag": {
+          "description": "The image tag, e.g. `1.11-alpine`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "description": "The list of key:value tags associated with the image.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "The unique image ID, e.g. `77af4d6b9913`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    },
+    "InventoryInfoActivityId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "Metadata": {
+      "additionalProperties": true,
+      "description": "OCSF `metadata` object: describes the metadata associated with the event.",
+      "properties": {
+        "correlation_uid": {
+          "description": "A unique identifier used to correlate this event with other related events.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "debug": {
+          "description": "Debug information about non-fatal issues with this event.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "event_code": {
+          "description": "The identifier of the original event (e.g. Windows Event Code).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "extension": {
+          "description": "The schema extension used to create the event. Deprecated in favor of `extensions`."
+        },
+        "extensions": {
+          "description": "The schema extensions used to create the event.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "is_truncated": {
+          "description": "Indicates whether the OCSF event data has been truncated.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "labels": {
+          "description": "The list of labels attached to the event.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "log_format": {
+          "description": "The format of data in the log where the data originated.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "log_level": {
+          "description": "The level at which an event was logged.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "log_name": {
+          "description": "The event log name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "log_provider": {
+          "description": "The logging provider or logging service that logged the event.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "log_source": {
+          "description": "The log system or component where the data originated.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "log_version": {
+          "description": "The event log schema version of the original event.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "logged_time": {
+          "description": "The time when the logging system collected and logged the event.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "logged_time_dt": {
+          "description": "`logged_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loggers": {
+          "description": "The pipeline of devices and logging products between the source and destination.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "modified_time": {
+          "description": "The time when the event was last modified or enriched.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "modified_time_dt": {
+          "description": "`modified_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "original_event_uid": {
+          "description": "The unique identifier assigned to the event in its original logging system.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "original_time": {
+          "description": "The original event time as reported by the event source.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "processed_time": {
+          "description": "The event processed time, such as an ETL operation.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "processed_time_dt": {
+          "description": "`processed_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "product": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Product"
+            }
+          ],
+          "description": "The product that reported the event."
+        },
+        "profiles": {
+          "description": "The list of profiles used to create the event.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "reporter": {
+          "description": "The entity from which the event or finding was first reported."
+        },
+        "sequence": {
+          "description": "Sequence number of the event, for unambiguous ordering.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "source": {
+          "description": "The source of the event or finding.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "description": "The list of key:value tags associated with the event.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "tenant_uid": {
+          "description": "The unique tenant identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_queued_duration": {
+          "description": "The amount of time an event spent in a queue awaiting processing."
+        },
+        "transformation_info_list": {
+          "description": "An array of transformation info describing mappings/transforms applied to the data.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "transmit_time": {
+          "description": "The time when the event was transmitted from the logging device to its next destination.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "transmit_time_dt": {
+          "description": "`transmit_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The type of the event or finding, as a subset of `source`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "A unique identifier assigned to the OCSF event.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "untruncated_size": {
+          "description": "The original size of the OCSF event data in kilobytes before truncation.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "The version of the OCSF schema (SemVer) used to produce the event.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product",
+        "version"
+      ],
+      "type": "object"
+    },
+    "Organization": {
+      "additionalProperties": true,
+      "description": "OCSF `organization` object: describes characteristics of an organization or a Cloud tenant/organizational unit, e.g. an AWS Organization or a Google Cloud Organization.",
+      "properties": {
+        "name": {
+          "description": "The name of the organization, e.g. `Widget, Inc.`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ou_name": {
+          "description": "The name of an organizational unit, Google Cloud Folder, or AWS Org Unit.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ou_uid": {
+          "description": "The unique identifier of an organizational unit, Google Cloud Folder, or AWS Org Unit.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "The unique identifier of the organization, e.g. an AWS Org ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Os": {
+      "additionalProperties": true,
+      "description": "OCSF `os` object: describes characteristics of an operating system.",
+      "properties": {
+        "build": {
+          "description": "The operating system build number.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country": {
+          "description": "The operating system country code (ISO 3166-1 Alpha-2), e.g. `US`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpe_name": {
+          "description": "The Common Platform Enumeration (CPE) name, e.g. `cpe:/a:apple:safari:16.2`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpu_bits": {
+          "description": "The CPU architecture: the number of bits used for addressing in memory, e.g. `32` or `64`.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "edition": {
+          "description": "The operating system edition, e.g. `Professional`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kernel_release": {
+          "description": "The kernel release of the operating system, e.g. `5.15.0-122-generic`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lang": {
+          "description": "The two-letter lower case language code (ISO 639-1), e.g. `en`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The operating system name.",
+          "type": "string"
+        },
+        "sp_name": {
+          "description": "The name of the latest Service Pack.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sp_ver": {
+          "description": "The version number of the latest Service Pack.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The type of the operating system.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type_id": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/OsTypeId"
+            }
+          ],
+          "description": "The type identifier of the operating system."
+        },
+        "version": {
+          "description": "The version of the OS running on the device that originated the event, e.g. `Windows 10`, `OS X 10.7`, or `iOS 9`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "type_id"
+      ],
+      "type": "object"
+    },
+    "OsTypeId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "Product": {
+      "additionalProperties": true,
+      "description": "OCSF `product` object: describes characteristics of a software product.",
+      "properties": {
+        "cpe_name": {
+          "description": "The Common Platform Enumeration (CPE) name of the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "feature": {
+          "description": "The feature that reported the event."
+        },
+        "lang": {
+          "description": "The two letter lower case language code (ISO 639-1) of the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "The installation path of the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "description": "The unique identifier of the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url_string": {
+          "description": "The URL pointing towards the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vendor_name": {
+          "description": "The name of the vendor of the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "The version of the product, as defined by the event source.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "RiskLevelId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "SeverityId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "User": {
+      "additionalProperties": true,
+      "description": "OCSF `user` object: describes the user identity and characteristics.",
+      "properties": {
+        "account": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Account"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The user's account or the account associated with the user."
+        },
+        "credential_uid": {
+          "description": "The unique identifier of the user's credential, e.g. an AWS Access Key ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display_name": {
+          "description": "The display name of the user, as reported by the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "domain": {
+          "description": "The domain where the user is defined, e.g. the LDAP or Active Directory domain.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "email_addr": {
+          "description": "The user's primary email address.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "forward_addr": {
+          "description": "The user's forwarding email address.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "full_name": {
+          "description": "The full name of the user, as reported by the product.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groups": {
+          "description": "The administrative groups to which the user belongs.",
+          "items": {
+            "$ref": "#/definitions/Group"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "has_mfa": {
+          "description": "The user has a multi-factor or secondary-factor device assigned.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ldap_person": {
+          "description": "The additional LDAP attributes that describe a person."
+        },
+        "name": {
+          "description": "The username, e.g. `janedoe1`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "org": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Organization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Organization and org unit related to the user."
+        },
+        "phone_number": {
+          "description": "The telephone number of the user.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "programmatic_credentials": {
+          "description": "Details about the programmatic credentials (API keys, access tokens, certificates, etc.) associated with the user.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "risk_level": {
+          "description": "The risk level, normalized to the caption of `risk_level_id`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "risk_level_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RiskLevelId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The normalized risk level id."
+        },
+        "risk_score": {
+          "description": "The risk score as reported by the event source.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The type of the user, e.g. `System`, `AWS IAM User`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UserTypeId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The normalized user type identifier."
+        },
+        "uid": {
+          "description": "The unique user identifier, e.g. the Windows user SID, ActiveDirectory DN, or AWS user ARN.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid_alt": {
+          "description": "The alternate user identifier, e.g. the Active Directory user GUID or AWS user Principal ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UserTypeId": {
+      "format": "int32",
+      "type": "integer"
+    }
+  },
+  "description": "OCSF `inventory_info` (class 5001): the discovery result of a device (endpoint, laptop, mobile device, IoT, or server) discovered by an inventory process.",
+  "properties": {
+    "action": {
+      "description": "The normalized caption of action_id.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "action_id": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FindingActionId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The action taken by a control or other policy-based system leading to an outcome or disposition."
+    },
+    "activity_id": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/InventoryInfoActivityId"
+        }
+      ],
+      "description": "The normalized identifier of the activity that triggered the event."
+    },
+    "activity_name": {
+      "description": "The event activity name, as defined by the activity_id.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "actor": {
+      "description": "The actor object describes details about the user/role/process that was the source of the activity."
+    },
+    "api": {
+      "description": "Describes details about a typical API (Application Programming Interface) call."
+    },
+    "attacks": {
+      "description": "An array of MITRE ATT&CK® objects describing identified tactics, techniques & sub-techniques.",
+      "items": true,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "authorizations": {
+      "description": "Provides details about an authorization, such as authorization outcome, and any associated policies related to the activity/event.",
+      "items": true,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "category_name": {
+      "description": "The event category name, as defined by category_uid value: Discovery.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "category_uid": {
+      "description": "The category unique identifier of the event.",
+      "format": "int32",
+      "type": "integer"
+    },
+    "class_name": {
+      "description": "The event class name, as defined by class_uid value: Device Inventory Info.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "class_uid": {
+      "description": "The unique identifier of a class.",
+      "format": "int32",
+      "type": "integer"
+    },
+    "cloud": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Cloud"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Describes details about the Cloud environment where the event or finding was created."
+    },
+    "confidence": {
+      "description": "The confidence, normalized to the caption of the confidence_id value.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidence_id": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FindingConfidenceId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The normalized confidence refers to the accuracy of the rule that created the finding."
+    },
+    "confidence_score": {
+      "description": "The confidence score as reported by the event source.",
+      "format": "int32",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "count": {
+      "description": "The number of times that events in the same logical group occurred during the event Start Time to End Time period.",
+      "format": "int32",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "device": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Device"
+        }
+      ],
+      "description": "The device that is being discovered by an inventory process."
+    },
+    "disposition": {
+      "description": "The disposition name, normalized to the caption of the disposition_id value.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "disposition_id": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FindingDispositionId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Describes the outcome or action taken by a security control, such as access control checks, malware detections or various types of policy violations."
+    },
+    "duration": {
+      "description": "The event duration or aggregate time, the amount of time the event covers from start_time to end_time in milliseconds.",
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "end_time": {
+      "description": "The end time of a time period, or the time of the most recent event included in the aggregate event.",
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "end_time_dt": {
+      "description": "The end time of a time period, or the time of the most recent event included in the aggregate event.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "enrichments": {
+      "description": "The additional information from an external data source, which is associated with the event or a finding.",
+      "items": true,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "firewall_rule": {
+      "description": "The firewall rule that pertains to the control that triggered the event, if applicable."
+    },
+    "is_alert": {
+      "description": "Indicates that the event is considered to be an alertable signal.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "malware": {
+      "description": "A list of Malware objects, describing details about the identified malware.",
+      "items": true,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "malware_scan_info": {
+      "description": "Describes details about the scan job that identified malware on the target system."
+    },
+    "message": {
+      "description": "The description of the event/finding, as defined by the source.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Metadata"
+        }
+      ],
+      "description": "The metadata associated with the event or a finding."
+    },
+    "observables": {
+      "description": "The observables associated with the event or a finding.",
+      "items": true,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "policy": {
+      "description": "The policy that pertains to the control that triggered the event, if applicable."
+    },
+    "raw_data": {
+      "description": "The raw event/finding data as received from the source.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "raw_data_hash": {
+      "description": "The hash, which describes the content of the raw_data field."
+    },
+    "raw_data_size": {
+      "description": "The size of the raw data which was transformed into an OCSF event, in bytes.",
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "risk_details": {
+      "description": "Describes the risk associated with the finding.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "risk_level": {
+      "description": "The risk level, normalized to the caption of the risk_level_id value.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "risk_level_id": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RiskLevelId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The normalized risk level id."
+    },
+    "risk_score": {
+      "description": "The risk score as reported by the event source.",
+      "format": "int32",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "severity": {
+      "description": "The event/finding severity, normalized to the caption of the severity_id value.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "severity_id": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityId"
+        }
+      ],
+      "description": "The normalized identifier of the event/finding severity. Smaller numerical values represent lower impact events, larger represent higher impact events."
+    },
+    "start_time": {
+      "description": "The start time of a time period, or the time of the least recent event included in the aggregate event.",
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "start_time_dt": {
+      "description": "The start time of a time period, or the time of the least recent event included in the aggregate event.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "The event status, normalized to the caption of the status_id value.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status_code": {
+      "description": "The event status code, as reported by the event source.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status_detail": {
+      "description": "The status detail contains additional information about the event/finding outcome.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status_id": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/DiscoveryStatusId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The normalized identifier of the event status."
+    },
+    "time": {
+      "description": "The normalized event occurrence time or the finding creation time.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "time_dt": {
+      "description": "The normalized event occurrence time or the finding creation time.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timezone_offset": {
+      "description": "The number of minutes that the reported event time is ahead or behind UTC, in the range -1,080 to +1,080.",
+      "format": "int32",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "type_name": {
+      "description": "The event/finding type name, as defined by the type_uid.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "type_uid": {
+      "description": "The event/finding type ID. It identifies the event's semantics and structure: class_uid * 100 + activity_id.",
+      "format": "int32",
+      "type": "integer"
+    },
+    "unmapped": {
+      "description": "The attributes that are not mapped to the event schema."
+    }
+  },
+  "required": [
+    "activity_id",
+    "category_uid",
+    "class_uid",
+    "device",
+    "metadata",
+    "severity_id",
+    "time",
+    "type_uid"
+  ],
+  "title": "InventoryInfo",
+  "type": "object"
+}

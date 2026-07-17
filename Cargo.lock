@@ -1438,6 +1438,8 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ocsf-core",
+ "schemars",
  "serde_json",
  "ureq",
 ]
