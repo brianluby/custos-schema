@@ -11,12 +11,14 @@ decision below — there is no "undecided" state.
   with full field coverage and oracle-verified shape (name/required/
   coarse-type parity — see `crates/ocsf-core/tests/conformance*.rs`). Where
   the OCSF object defines a `constraints` rule (`at_least_one`, `just_one`,
-  etc.), it is enforced via `ocsf_core::validation::Validate` where that
-  `Validate` impl exists — currently only `vulnerability`. Eight other typed
-  objects carry an oracle `constraints` rule that is not yet wired up
-  (`product`, `user`, `group`, `account`, `organization`, `container`,
-  `kb_article`, `device`); enforcing them is a planned follow-up before the
-  adapter crates land.
+  etc.), it is enforced via `ocsf_core::validation::Validate`. In addition to
+  `vulnerability`'s `just_one`, the nine other typed objects that carry an
+  oracle `constraints` rule are now enforced too — `product`, `user`, `group`,
+  `account`, `organization`, `container`, `kb_article`, `device`, and
+  `resource_details` (all `at_least_one`). Event classes recurse into these
+  objects during `validate()` (e.g. every class validates its `metadata`,
+  which in turn validates its required `product`), so a constrained typed
+  object reachable from a supported class is checked in place.
 - **`json`** — represented as opaque `serde_json::Value` (or
   `Vec<serde_json::Value>`) wherever it appears on a typed parent. The bytes
   round-trip losslessly through serde, but there is no dedicated struct, no

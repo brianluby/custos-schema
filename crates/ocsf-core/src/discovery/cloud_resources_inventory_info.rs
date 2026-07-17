@@ -6,7 +6,10 @@ use crate::discovery::DiscoveryStatusId;
 use crate::enums::{SeverityId, ocsf_enum};
 use crate::findings::{FindingActionId, FindingConfidenceId, FindingDispositionId};
 use crate::objects::{Cloud, Container, Device, Metadata, ResourceDetails, RiskLevelId};
-use crate::validation::{Validate, ValidationReport, check_uids, warn_recommended};
+use crate::validation::{
+    Validate, ValidationReport, check_nested, check_other_collisions, check_scalar_range,
+    check_uids, ranges, warn_recommended,
+};
 
 ocsf_enum! {
     /// Normalized activity for `cloud_resources_inventory_info` (`activity_id`).
@@ -208,6 +211,72 @@ impl OcsfClass for CloudResourcesInventoryInfo {
 }
 
 impl CloudResourcesInventoryInfo {
+    /// Modeled wire-name set (every field except the flattened `other`),
+    /// pinned to the schemars property set by the conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "action",
+        "action_id",
+        "activity_id",
+        "activity_name",
+        "actor",
+        "api",
+        "attacks",
+        "authorizations",
+        "category_name",
+        "category_uid",
+        "class_name",
+        "class_uid",
+        "cloud",
+        "confidence",
+        "confidence_id",
+        "confidence_score",
+        "container",
+        "count",
+        "database",
+        "databucket",
+        "device",
+        "disposition",
+        "disposition_id",
+        "duration",
+        "end_time",
+        "end_time_dt",
+        "enrichments",
+        "firewall_rule",
+        "idp",
+        "is_alert",
+        "malware",
+        "malware_scan_info",
+        "message",
+        "metadata",
+        "observables",
+        "policy",
+        "raw_data",
+        "raw_data_hash",
+        "raw_data_size",
+        "region",
+        "resources",
+        "risk_details",
+        "risk_level",
+        "risk_level_id",
+        "risk_score",
+        "severity",
+        "severity_id",
+        "start_time",
+        "start_time_dt",
+        "status",
+        "status_code",
+        "status_detail",
+        "status_id",
+        "table",
+        "time",
+        "time_dt",
+        "timezone_offset",
+        "type_name",
+        "type_uid",
+        "unmapped",
+    ];
+
     /// Construct a `CloudResourcesInventoryInfo` from its required
     /// attributes, deriving `class_uid`/`category_uid`/`type_uid` from the
     /// [`OcsfClass`] constants and `activity_id`. Every optional attribute
@@ -317,6 +386,21 @@ impl Validate for CloudResourcesInventoryInfo {
         // is governed solely by the `at_least_one` constraint above, not by
         // `metadata.profiles` containing `"cloud"`. So `check_cloud_profile`
         // does not apply to this class.
+        check_nested(&self.metadata, "metadata", &mut r);
+        if let Some(device) = &self.device {
+            check_nested(device, "device", &mut r);
+        }
+        if let Some(container) = &self.container {
+            check_nested(container, "container", &mut r);
+        }
+        if let Some(resources) = &self.resources {
+            for (i, resource) in resources.iter().enumerate() {
+                check_nested(resource, &format!("resources[{i}]"), &mut r);
+            }
+        }
+        let (attr, min, max) = ranges::TIMEZONE_OFFSET;
+        check_scalar_range(attr, self.timezone_offset, min, max, &mut r);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
         warn_recommended(
             &mut r,
             &[

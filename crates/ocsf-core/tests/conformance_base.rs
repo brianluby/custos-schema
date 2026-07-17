@@ -12,6 +12,14 @@ fn metadata_matches_oracle() {
     assert_object_matches::<Metadata>("metadata");
 }
 
+/// `FIELD_NAMES` (read by the extension-key collision check) must stay in
+/// lockstep with the schemars property set for the types that declare it.
+#[test]
+fn field_names_match_schema() {
+    assert_field_names_match::<Product>("object", "product", Product::FIELD_NAMES);
+    assert_field_names_match::<Metadata>("object", "metadata", Metadata::FIELD_NAMES);
+}
+
 /// `SeverityId::KNOWN` must line up with the oracle's `severity_id` enum
 /// vocabulary on a real class, not just be internally self-consistent.
 #[test]

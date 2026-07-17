@@ -139,6 +139,14 @@ pub trait Validate {
 /// `class_uid * 100 + activity_id`. `ev`'s trait method
 /// [`OcsfClass::type_uid`] recomputes the expected value from `activity_id`
 /// (disambiguated from the `type_uid` field by call syntax).
+///
+/// Also records an error when the instance's `activity_id` falls outside the
+/// OCSF two-digit activity window `0..=99`. Such a value cannot produce a
+/// valid `type_uid` (see [`OcsfClass::type_uid`], which clamps it to activity
+/// `0` precisely so it can neither mint a valid uid nor collide with a
+/// neighbouring class's), so it is surfaced here rather than passing silently.
+/// Constructors derive `type_uid` via the same trait method, so construction
+/// and validation stay self-consistent for out-of-range activities.
 pub(crate) fn check_uids<C: OcsfClass>(
     ev: &C,
     class_uid: i32,
@@ -152,6 +160,13 @@ pub(crate) fn check_uids<C: OcsfClass>(
     if category_uid != C::CATEGORY_UID as i32 {
         r.error("category_uid", format!("must be {}", C::CATEGORY_UID));
     }
+    let activity = ev.activity_id_value();
+    if !(0..=99).contains(&activity) {
+        r.error(
+            "activity_id",
+            format!("value {activity} outside the OCSF activity range 0..=99"),
+        );
+    }
     let expected = OcsfClass::type_uid(ev) as i32;
     if type_uid != expected {
         r.error(
@@ -159,6 +174,100 @@ pub(crate) fn check_uids<C: OcsfClass>(
             format!("must equal class_uid * 100 + activity_id ({expected})"),
         );
     }
+}
+
+/// Report every extension key in `other` that shadows a modeled field.
+///
+/// Each generated struct carries a `#[serde(flatten)] other` catch-all for
+/// forward compatibility. Because `flatten` deserializes into `other` *any*
+/// key not matched by a modeled field, and serializes `other`'s entries back
+/// out verbatim, inserting a key that names a modeled field (e.g.
+/// `other["class_uid"] = null`) is invalid: it round-trips to a document with
+/// a duplicate JSON key (`to_string`) or silently overwrites the modeled
+/// value (`to_value`). The type system can't prevent it, so it is caught here
+/// at `validate()` time. `fields` is the struct's modeled wire-name set
+/// (its `FIELD_NAMES` const, which the conformance harness pins to the
+/// schemars property set). `attribute_prefix` is prepended to the reported
+/// `other` attribute name (normally empty — nested paths are applied by
+/// [`check_nested`] as the error bubbles up to the parent).
+pub(crate) fn check_other_collisions(
+    other: &serde_json::Map<String, serde_json::Value>,
+    fields: &[&str],
+    attribute_prefix: &str,
+    r: &mut ValidationReport,
+) {
+    for key in other.keys() {
+        if fields.contains(&key.as_str()) {
+            r.error(
+                &format!("{attribute_prefix}other"),
+                format!("extension key '{key}' collides with a modeled field"),
+            );
+        }
+    }
+}
+
+/// Recurse into a nested typed object and re-surface each of its validation
+/// errors on the parent under a nested-path attribute.
+///
+/// This is the pinned nested-issue convention: a child error on attribute
+/// `child_attr` is re-recorded as `{path}.{child_attr}` (e.g. the `product`
+/// object's `name` error, recursed under `metadata`, becomes
+/// `metadata.product.name`). Callers recursing a `Vec<T>` pass an indexed
+/// `path` per element (e.g. `resources[0]`), yielding `resources[0].name`.
+/// Only errors propagate; a child's warnings are intentionally not surfaced
+/// on the parent (each type owns its own recommended-attribute set).
+pub(crate) fn check_nested<V: Validate>(child: &V, path: &str, r: &mut ValidationReport) {
+    for issue in child.validate().errors {
+        r.error(&format!("{path}.{}", issue.attribute), issue.message);
+    }
+}
+
+/// Enforce a documented scalar range on an optional integer attribute.
+///
+/// `None` (absent) is always accepted; a present value outside `min..=max`
+/// records an error naming the range. See the [`ranges`] module for the
+/// range constants and the important caveat that these ranges live only in
+/// oracle *description* prose, not the upstream JSON Schema.
+pub(crate) fn check_scalar_range(
+    attribute: &str,
+    value: Option<i32>,
+    min: i32,
+    max: i32,
+    r: &mut ValidationReport,
+) {
+    if let Some(v) = value
+        && !(min..=max).contains(&v)
+    {
+        r.error(
+            attribute,
+            format!("value {v} outside the documented range {min}..={max}"),
+        );
+    }
+}
+
+/// Documented scalar ranges, as `(attribute, min, max)` inclusive bounds.
+///
+/// **These ranges are stricter than the upstream OCSF JSON Schema.** OCSF
+/// 1.8.0 states them only in an attribute's *description* prose; the
+/// structural schema (`integer_t`) encodes no `minimum`/`maximum`. Enforcing
+/// them in `validate()` therefore rejects some documents the vendored
+/// JSON-Schema oracle would accept — a deliberate, documented divergence.
+/// Each constant cites the oracle description it transcribes verbatim.
+///
+/// Kept `pub` (though `#[doc(hidden)]`) so the `xtask` schema generator can
+/// later read these bounds to inject `minimum`/`maximum` into the emitted
+/// JSON Schema; nothing in that generator is touched here.
+#[doc(hidden)]
+pub mod ranges {
+    /// `timezone_offset`, present on all 8 supported classes. Oracle
+    /// description: "The number of minutes that the reported event time is
+    /// ahead or behind UTC, in the range -1,080 to +1,080."
+    pub const TIMEZONE_OFFSET: (&str, i32, i32) = ("timezone_offset", -1080, 1080);
+
+    /// `impact_score`, present only on `detection_finding`. Oracle
+    /// description: "The impact as an integer value of the finding, valid
+    /// range 0-100."
+    pub const IMPACT_SCORE: (&str, i32, i32) = ("impact_score", 0, 100);
 }
 
 /// Enforce the `cloud`-profile conditional requirement: when `"cloud"` is in
@@ -237,5 +346,73 @@ mod tests {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("cve", false), ("title", false)]);
         assert_eq!(r.errors[0].attribute, "cve, title");
+    }
+
+    #[test]
+    fn check_other_collisions_flags_modeled_keys_only() {
+        let fields = &["class_uid", "time"];
+        let mut other = serde_json::Map::new();
+        other.insert("x_future".into(), serde_json::Value::Null);
+        let mut r = ValidationReport::new();
+        check_other_collisions(&other, fields, "", &mut r);
+        assert!(r.is_valid(), "a non-modeled extension key is fine");
+
+        other.insert("class_uid".into(), serde_json::Value::Null);
+        let mut r = ValidationReport::new();
+        check_other_collisions(&other, fields, "", &mut r);
+        assert_eq!(r.errors.len(), 1);
+        assert_eq!(r.errors[0].attribute, "other");
+        assert!(r.errors[0].message.contains("class_uid"));
+    }
+
+    #[test]
+    fn check_other_collisions_honors_attribute_prefix() {
+        let mut other = serde_json::Map::new();
+        other.insert("time".into(), serde_json::Value::Null);
+        let mut r = ValidationReport::new();
+        check_other_collisions(&other, &["time"], "metadata.", &mut r);
+        assert_eq!(r.errors[0].attribute, "metadata.other");
+    }
+
+    struct NestedFake;
+    impl Validate for NestedFake {
+        fn validate(&self) -> ValidationReport {
+            let mut r = ValidationReport::new();
+            r.error("name", "boom");
+            r.warn("desc", "recommended"); // must NOT propagate
+            r
+        }
+    }
+
+    #[test]
+    fn check_nested_prefixes_child_error_paths_and_drops_warnings() {
+        let mut r = ValidationReport::new();
+        check_nested(&NestedFake, "metadata.product", &mut r);
+        assert_eq!(r.errors.len(), 1);
+        assert_eq!(r.errors[0].attribute, "metadata.product.name");
+        assert_eq!(r.errors[0].message, "boom");
+        assert!(r.warnings.is_empty());
+    }
+
+    #[test]
+    fn check_scalar_range_boundaries() {
+        let (attr, min, max) = ranges::TIMEZONE_OFFSET;
+        // Absent is always fine.
+        let mut r = ValidationReport::new();
+        check_scalar_range(attr, None, min, max, &mut r);
+        assert!(r.is_valid());
+        // In-range min and max pass.
+        for v in [min, max, 0] {
+            let mut r = ValidationReport::new();
+            check_scalar_range(attr, Some(v), min, max, &mut r);
+            assert!(r.is_valid(), "value {v} should be in range");
+        }
+        // min-1 and max+1 fail.
+        for v in [min - 1, max + 1] {
+            let mut r = ValidationReport::new();
+            check_scalar_range(attr, Some(v), min, max, &mut r);
+            assert!(!r.is_valid(), "value {v} should be out of range");
+            assert_eq!(r.errors[0].attribute, "timezone_offset");
+        }
     }
 }

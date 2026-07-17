@@ -6,8 +6,9 @@ pub type Timestamp = i64;
 /// Common contract for a generated OCSF event class.
 ///
 /// Implemented by each class type (Task 5+). `type_uid` defaults to the
-/// normative OCSF formula (`class_uid * 100 + activity_id`), clamping a
-/// negative or out-of-range `activity_id_value` to `0` rather than panicking.
+/// normative OCSF formula (`class_uid * 100 + activity_id`), clamping any
+/// `activity_id_value` outside the two-digit activity window `0..=99` to
+/// `0` rather than panicking.
 pub trait OcsfClass {
     /// The class's unique identifier (e.g. `2002` for `vulnerability_finding`).
     const CLASS_UID: u32;
@@ -21,8 +22,26 @@ pub trait OcsfClass {
     fn activity_id_value(&self) -> i32;
 
     /// The event's `type_uid`: `CLASS_UID * 100 + activity_id`.
+    ///
+    /// The OCSF `type_uid` formula (`class_uid * 100 + activity_id`) presumes
+    /// a two-digit activity space, so an `activity_id_value` outside
+    /// `0..=99` (negative *or* `> 99`) is clamped to activity `0` here. An
+    /// out-of-range activity cannot mint a valid `type_uid`, and — critically
+    /// — must not be allowed to mint a *colliding* one: without the upper
+    /// clamp, activity `100` on class `2002` would compute `200300`, the
+    /// exact `type_uid` of class `2003`'s activity `0`. Clamping keeps an
+    /// out-of-range value pinned to `class_uid * 100`, which belongs to no
+    /// other class. The wire value itself stays lossless (`Unrecognized` is
+    /// preserved through serde); [`crate::validation::check_uids`] separately
+    /// records a validation error for the out-of-range `activity_id`.
     fn type_uid(&self) -> u32 {
-        Self::CLASS_UID * 100 + u32::try_from(self.activity_id_value()).unwrap_or(0)
+        let activity = self.activity_id_value();
+        let activity = if (0..=99).contains(&activity) {
+            activity as u32
+        } else {
+            0
+        };
+        Self::CLASS_UID * 100 + activity
     }
 }
 
@@ -43,6 +62,15 @@ mod tests {
     #[test]
     fn type_uid_is_class_uid_times_100_plus_activity() {
         assert_eq!(Fake(1).type_uid(), 200201);
+        assert_eq!(Fake(99).type_uid(), 200299); // boundary: still in range
         assert_eq!(Fake(-5).type_uid(), 200200); // negative clamps to 0, no panic
+    }
+
+    #[test]
+    fn out_of_range_activity_clamps_and_cannot_collide() {
+        // Activity 100 on class 2002 must NOT compute 200300 (class 2003's
+        // activity 0); it clamps to activity 0 -> class_uid * 100.
+        assert_eq!(Fake(100).type_uid(), 200200);
+        assert_ne!(Fake(100).type_uid(), 200300);
     }
 }

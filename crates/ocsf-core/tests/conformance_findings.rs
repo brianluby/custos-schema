@@ -60,6 +60,32 @@ fn application_security_posture_finding_matches_oracle() {
     );
 }
 
+/// `FIELD_NAMES` (read by the extension-key collision check) must stay in
+/// lockstep with the schemars property set for all four Findings classes.
+#[test]
+fn field_names_match_schema() {
+    assert_field_names_match::<VulnerabilityFinding>(
+        "class",
+        "vulnerability_finding",
+        VulnerabilityFinding::FIELD_NAMES,
+    );
+    assert_field_names_match::<ComplianceFinding>(
+        "class",
+        "compliance_finding",
+        ComplianceFinding::FIELD_NAMES,
+    );
+    assert_field_names_match::<DetectionFinding>(
+        "class",
+        "detection_finding",
+        DetectionFinding::FIELD_NAMES,
+    );
+    assert_field_names_match::<ApplicationSecurityPostureFinding>(
+        "class",
+        "application_security_posture_finding",
+        ApplicationSecurityPostureFinding::FIELD_NAMES,
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Shared finding-enum vocabularies. status_id/action_id/confidence_id/
 // disposition_id/risk_level_id are byte-for-byte identical across all four
@@ -479,4 +505,99 @@ fn vulnerability_finding_roundtrips_unknown_fields() {
 
     let out = serde_json::to_value(&back).unwrap();
     assert_eq!(out["x_future"], serde_json::json!({"a": 1}));
+}
+
+// ---------------------------------------------------------------------------
+// Permanent regression tests for the three verified review reproductions:
+// each takes an otherwise-valid event and must make it INVALID.
+//   1. an extension key that shadows a modeled field (`other["class_uid"]`),
+//   2. an out-of-range `activity_id` (`Unrecognized(100)`), whose `type_uid`
+//      must clamp to `class_uid * 100` and never collide with class 2003, and
+//   3. a nested `metadata.product` that violates its own `at_least_one`
+//      (`Metadata::new(Product::default())`).
+// ---------------------------------------------------------------------------
+
+fn vf_with_activity(activity: VulnerabilityFindingActivityId) -> VulnerabilityFinding {
+    VulnerabilityFinding::new(
+        1_752_000_000_000,
+        activity,
+        SeverityId::High,
+        Metadata::new(Product::named("test")),
+        FindingInfo {
+            uid: "f-1".into(),
+            ..Default::default()
+        },
+        vec![Vulnerability {
+            cve: Some(Cve {
+                uid: "CVE-2021-44228".into(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }],
+    )
+}
+
+#[test]
+fn regression_extension_key_collision_is_invalid() {
+    let mut vf = sample_vf();
+    assert!(vf.validate().is_valid());
+    vf.other
+        .insert("class_uid".to_string(), serde_json::Value::Null);
+    let report = vf.validate();
+    assert!(!report.is_valid());
+    assert!(
+        report
+            .errors
+            .iter()
+            .any(|e| e.attribute == "other" && e.message.contains("class_uid"))
+    );
+}
+
+#[test]
+fn regression_out_of_range_activity_is_invalid_and_cannot_collide() {
+    let vf = vf_with_activity(VulnerabilityFindingActivityId::Unrecognized(100));
+    // type_uid clamps to class_uid * 100 (200200); it must NOT be 200300,
+    // which is class 2003 (compliance_finding) at activity 0.
+    assert_eq!(vf.type_uid, 200200);
+    assert_ne!(vf.type_uid, 200300);
+    let report = vf.validate();
+    assert!(!report.is_valid());
+    assert!(report.errors.iter().any(|e| e.attribute == "activity_id"));
+}
+
+#[test]
+fn regression_negative_activity_is_invalid() {
+    let vf = vf_with_activity(VulnerabilityFindingActivityId::Unrecognized(-5));
+    assert_eq!(vf.type_uid, 200200);
+    let report = vf.validate();
+    assert!(!report.is_valid());
+    assert!(report.errors.iter().any(|e| e.attribute == "activity_id"));
+}
+
+#[test]
+fn boundary_activity_99_other_is_valid() {
+    // 99 (Other) is the top of the valid two-digit activity window.
+    let vf = vf_with_activity(VulnerabilityFindingActivityId::Other);
+    assert_eq!(vf.type_uid, 200299);
+    assert!(
+        vf.validate().is_valid(),
+        "errors: {:?}",
+        vf.validate().errors
+    );
+}
+
+#[test]
+fn regression_nested_metadata_product_constraint_is_invalid() {
+    // Metadata::new(Product::default()) is no longer a valid sample: the
+    // product violates its at_least_one, surfacing under `metadata.product.*`.
+    let mut vf = sample_vf();
+    vf.metadata = Metadata::new(Product::default());
+    let report = vf.validate();
+    assert!(!report.is_valid());
+    assert!(
+        report
+            .errors
+            .iter()
+            .any(|e| e.attribute.starts_with("metadata.product"))
+    );
 }

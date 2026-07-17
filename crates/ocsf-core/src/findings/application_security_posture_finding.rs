@@ -12,7 +12,8 @@ use crate::objects::{
     Vulnerability,
 };
 use crate::validation::{
-    Validate, ValidationReport, check_cloud_profile, check_uids, warn_recommended,
+    Validate, ValidationReport, check_cloud_profile, check_nested, check_other_collisions,
+    check_scalar_range, check_uids, ranges, warn_recommended,
 };
 
 ocsf_enum! {
@@ -218,6 +219,73 @@ impl OcsfClass for ApplicationSecurityPostureFinding {
 }
 
 impl ApplicationSecurityPostureFinding {
+    /// Modeled wire-name set (every field except the flattened `other`),
+    /// pinned to the schemars property set by the conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "action",
+        "action_id",
+        "activity_id",
+        "activity_name",
+        "actor",
+        "api",
+        "application",
+        "attacks",
+        "authorizations",
+        "category_name",
+        "category_uid",
+        "class_name",
+        "class_uid",
+        "cloud",
+        "comment",
+        "compliance",
+        "confidence",
+        "confidence_id",
+        "confidence_score",
+        "count",
+        "device",
+        "disposition",
+        "disposition_id",
+        "duration",
+        "end_time",
+        "end_time_dt",
+        "enrichments",
+        "finding_info",
+        "firewall_rule",
+        "is_alert",
+        "malware",
+        "malware_scan_info",
+        "message",
+        "metadata",
+        "observables",
+        "policy",
+        "raw_data",
+        "raw_data_hash",
+        "raw_data_size",
+        "remediation",
+        "resources",
+        "risk_details",
+        "risk_level",
+        "risk_level_id",
+        "risk_score",
+        "severity",
+        "severity_id",
+        "start_time",
+        "start_time_dt",
+        "status",
+        "status_code",
+        "status_detail",
+        "status_id",
+        "time",
+        "time_dt",
+        "timezone_offset",
+        "type_name",
+        "type_uid",
+        "unmapped",
+        "vendor_attributes",
+        "vulnerabilities",
+    ];
+
     /// Construct a `ApplicationSecurityPostureFinding` from its required attributes, deriving
     /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
     /// and `activity_id`. Every optional attribute starts unset.
@@ -320,6 +388,18 @@ impl Validate for ApplicationSecurityPostureFinding {
             check_vulnerabilities(vulnerabilities, &mut r);
         }
         check_cloud_profile(&self.metadata, self.cloud.is_some(), &mut r);
+        check_nested(&self.metadata, "metadata", &mut r);
+        if let Some(device) = &self.device {
+            check_nested(device, "device", &mut r);
+        }
+        if let Some(resources) = &self.resources {
+            for (i, resource) in resources.iter().enumerate() {
+                check_nested(resource, &format!("resources[{i}]"), &mut r);
+            }
+        }
+        let (attr, min, max) = ranges::TIMEZONE_OFFSET;
+        check_scalar_range(attr, self.timezone_offset, min, max, &mut r);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
         warn_recommended(
             &mut r,
             &[

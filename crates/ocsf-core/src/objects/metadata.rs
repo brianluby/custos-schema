@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::base::Timestamp;
 use crate::objects::Product;
+use crate::validation::{Validate, ValidationReport, check_nested, check_other_collisions};
 
 /// OCSF `metadata` object: describes the metadata associated with the event.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -116,12 +117,57 @@ pub struct Metadata {
     /// The original size of the OCSF event data in kilobytes before truncation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub untruncated_size: Option<i32>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`]: inserting a key that names a modeled field is
+    /// invalid — see [`check_other_collisions`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
 }
 
 impl Metadata {
+    /// Modeled wire-name set (every field except the flattened `other`),
+    /// pinned to the schemars property set by the conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "product",
+        "version",
+        "profiles",
+        "correlation_uid",
+        "debug",
+        "event_code",
+        "extension",
+        "extensions",
+        "is_truncated",
+        "labels",
+        "log_format",
+        "log_level",
+        "log_name",
+        "log_provider",
+        "log_source",
+        "log_version",
+        "logged_time",
+        "logged_time_dt",
+        "loggers",
+        "modified_time",
+        "modified_time_dt",
+        "original_event_uid",
+        "original_time",
+        "processed_time",
+        "processed_time_dt",
+        "reporter",
+        "sequence",
+        "source",
+        "tags",
+        "tenant_uid",
+        "total_queued_duration",
+        "transformation_info_list",
+        "transmit_time",
+        "transmit_time_dt",
+        "type",
+        "uid",
+        "untruncated_size",
+    ];
+
     /// Construct a `Metadata` pinned to [`crate::OCSF_VERSION`], with every
     /// other field defaulted (`None` / empty).
     pub fn new(product: Product) -> Self {
@@ -168,10 +214,48 @@ impl Metadata {
     }
 }
 
+impl Validate for Metadata {
+    /// `metadata` carries no oracle `constraints` of its own, so this recurses
+    /// into its required `product` object (surfacing the product's
+    /// `at_least_one` errors under `product.*`) and runs the extension-key
+    /// collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        check_nested(&self.product, "product", &mut r);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::objects::Product;
+    use crate::validation::Validate;
+
+    #[test]
+    fn metadata_recurses_into_product() {
+        // A product with neither name nor uid violates its at_least_one;
+        // the error must surface under `product.*` on the metadata.
+        let m = Metadata::new(Product::default());
+        let report = m.validate();
+        assert!(!report.is_valid());
+        assert!(
+            report
+                .errors
+                .iter()
+                .any(|e| e.attribute.starts_with("product"))
+        );
+        // A named product satisfies the recursion.
+        assert!(Metadata::new(Product::named("trivy")).validate().is_valid());
+    }
+
+    #[test]
+    fn metadata_extension_key_collision_is_invalid() {
+        let mut m = Metadata::new(Product::named("x"));
+        m.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(m.validate().errors.iter().any(|e| e.attribute == "other"));
+    }
 
     #[test]
     fn metadata_new_pins_version_and_roundtrips_unknown_fields() {

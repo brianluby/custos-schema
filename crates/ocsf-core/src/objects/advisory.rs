@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::base::Timestamp;
 use crate::enums::ocsf_enum;
 use crate::objects::{Cve, Cwe, Os, Product};
+use crate::validation::{Validate, ValidationReport, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized install state (OCSF `install_state_id`), shared by the
@@ -136,14 +137,53 @@ pub struct KbArticle {
     /// The unique identifier for the KB article.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl KbArticle {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "avg_timespan",
+        "bulletin",
+        "classification",
+        "created_time",
+        "created_time_dt",
+        "install_state",
+        "install_state_id",
+        "is_superseded",
+        "os",
+        "product",
+        "severity",
+        "size",
+        "src_url",
+        "title",
+        "uid",
+    ];
+}
+
+impl Validate for KbArticle {
+    /// Enforces the oracle's `kb_article` constraint (`at_least_one` of `uid`,
+    /// `src_url`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[
+            ("uid", self.uid.is_some()),
+            ("src_url", self.src_url.is_some()),
+        ]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::validation::Validate;
 
     #[test]
     fn install_state_id_roundtrips_known_and_unrecognized() {
@@ -163,5 +203,17 @@ mod tests {
         let out = serde_json::to_value(&advisory).unwrap();
         assert_eq!(out["future_field"], 1);
         assert!(out.get("title").is_none());
+    }
+
+    #[test]
+    fn kb_article_at_least_one_and_collision_enforced() {
+        assert!(!KbArticle::default().validate().is_valid());
+        let mut ok = KbArticle {
+            src_url: Some("https://example.com/kb".into()),
+            ..Default::default()
+        };
+        assert!(ok.validate().is_valid());
+        ok.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(ok.validate().errors.iter().any(|e| e.attribute == "other"));
     }
 }

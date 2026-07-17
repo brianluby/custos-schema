@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::base::Timestamp;
 use crate::enums::ocsf_enum;
 use crate::objects::{Container, Group, Image, Organization, User};
+use crate::validation::{Validate, ValidationReport, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized risk level (OCSF `risk_level_id`), shared by the `device`
@@ -310,13 +311,131 @@ pub struct Device {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zone: Option<String>,
     /// Unknown/future fields, preserved losslessly.
+    ///
+    /// Collision-checking of this catch-all happens at [`Validate::validate`]:
+    /// inserting a key that names a modeled field is invalid.
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Device {
+    /// Modeled wire-name set (every field except the flattened `other`),
+    /// pinned to the schemars property set by the conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "agent_list",
+        "autoscale_uid",
+        "boot_time",
+        "boot_time_dt",
+        "boot_uid",
+        "container",
+        "created_time",
+        "created_time_dt",
+        "desc",
+        "domain",
+        "eid",
+        "first_seen_time",
+        "first_seen_time_dt",
+        "groups",
+        "hostname",
+        "hw_info",
+        "hypervisor",
+        "iccid",
+        "image",
+        "imei",
+        "imei_list",
+        "instance_uid",
+        "interface_name",
+        "interface_uid",
+        "ip",
+        "is_backed_up",
+        "is_compliant",
+        "is_managed",
+        "is_mobile_account_active",
+        "is_personal",
+        "is_shared",
+        "is_supervised",
+        "is_trusted",
+        "last_seen_time",
+        "last_seen_time_dt",
+        "location",
+        "mac",
+        "mac_vendor",
+        "meid",
+        "model",
+        "modified_time",
+        "modified_time_dt",
+        "name",
+        "namespace_pid",
+        "network_interfaces",
+        "org",
+        "os",
+        "os_machine_uuid",
+        "owner",
+        "pool",
+        "region",
+        "risk_level",
+        "risk_level_id",
+        "risk_score",
+        "subnet",
+        "subnet_uid",
+        "type",
+        "type_id",
+        "udid",
+        "uid",
+        "uid_alt",
+        "vendor_name",
+        "vlan_uid",
+        "vpc_uid",
+        "zone",
+    ];
+}
+
+impl Validate for Device {
+    /// Enforces the oracle's `device` constraint — `at_least_one` of `ip`,
+    /// `uid`, `name`, `hostname`, `instance_uid`, `interface_uid`,
+    /// `interface_name` (from `conformance/api/objects/device.base.json`) —
+    /// and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[
+            ("ip", self.ip.is_some()),
+            ("uid", self.uid.is_some()),
+            ("name", self.name.is_some()),
+            ("hostname", self.hostname.is_some()),
+            ("instance_uid", self.instance_uid.is_some()),
+            ("interface_uid", self.interface_uid.is_some()),
+            ("interface_name", self.interface_name.is_some()),
+        ]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::validation::Validate;
+
+    #[test]
+    fn device_at_least_one_constraint_enforced() {
+        assert!(!Device::default().validate().is_valid());
+        let ok = Device {
+            hostname: Some("host-1".into()),
+            ..Default::default()
+        };
+        assert!(ok.validate().is_valid());
+    }
+
+    #[test]
+    fn device_extension_key_collision_is_invalid() {
+        let mut d = Device {
+            hostname: Some("h".into()),
+            ..Default::default()
+        };
+        d.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(d.validate().errors.iter().any(|e| e.attribute == "other"));
+    }
 
     #[test]
     fn device_type_id_roundtrips_known_and_unrecognized() {

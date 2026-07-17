@@ -61,6 +61,28 @@ fn cloud_resources_inventory_info_matches_oracle() {
     );
 }
 
+/// `FIELD_NAMES` (read by the extension-key collision check) must stay in
+/// lockstep with the schemars property set for all four Discovery classes.
+#[test]
+fn field_names_match_schema() {
+    assert_field_names_match::<InventoryInfo>(
+        "class",
+        "inventory_info",
+        InventoryInfo::FIELD_NAMES,
+    );
+    assert_field_names_match::<UserInventory>(
+        "class",
+        "user_inventory",
+        UserInventory::FIELD_NAMES,
+    );
+    assert_field_names_match::<SoftwareInfo>("class", "software_info", SoftwareInfo::FIELD_NAMES);
+    assert_field_names_match::<CloudResourcesInventoryInfo>(
+        "class",
+        "cloud_resources_inventory_info",
+        CloudResourcesInventoryInfo::FIELD_NAMES,
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Shared/reused enum vocabularies. status_id is new here (Success/Failure,
 // distinct from findings' FindingStatusId); action_id/confidence_id/

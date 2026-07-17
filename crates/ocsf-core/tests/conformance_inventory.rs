@@ -56,6 +56,24 @@ fn check_matches() {
     assert_object_matches::<Check>("check");
 }
 
+/// `FIELD_NAMES` (read by the extension-key collision check) must stay in
+/// lockstep with the schemars property set for every constrained object that
+/// declares it.
+#[test]
+fn field_names_match_schema() {
+    assert_field_names_match::<Device>("object", "device", Device::FIELD_NAMES);
+    assert_field_names_match::<User>("object", "user", User::FIELD_NAMES);
+    assert_field_names_match::<Group>("object", "group", Group::FIELD_NAMES);
+    assert_field_names_match::<Account>("object", "account", Account::FIELD_NAMES);
+    assert_field_names_match::<Organization>("object", "organization", Organization::FIELD_NAMES);
+    assert_field_names_match::<Container>("object", "container", Container::FIELD_NAMES);
+    assert_field_names_match::<ResourceDetails>(
+        "object",
+        "resource_details",
+        ResourceDetails::FIELD_NAMES,
+    );
+}
+
 #[test]
 fn device_type_id_matches() {
     assert_enum_matches(

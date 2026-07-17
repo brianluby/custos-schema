@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::enums::ocsf_enum;
 use crate::objects::RiskLevelId;
+use crate::validation::{Validate, ValidationReport, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized user type (OCSF `user.type_id`).
@@ -65,9 +66,36 @@ pub struct Group {
     /// The alternate unique identifier of the group.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid_alt: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Group {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "desc",
+        "domain",
+        "name",
+        "privileges",
+        "type",
+        "uid",
+        "uid_alt",
+    ];
+}
+
+impl Validate for Group {
+    /// Enforces the oracle's `group` constraint (`at_least_one` of `name`,
+    /// `uid`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 /// OCSF `account` object: a user account, cloud account, subscription, or
@@ -103,9 +131,38 @@ pub struct Account {
     /// GCP Project ID.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Account {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "is_disabled",
+        "is_locked",
+        "is_on_premises_sync_enabled",
+        "labels",
+        "name",
+        "tags",
+        "type",
+        "type_id",
+        "uid",
+    ];
+}
+
+impl Validate for Account {
+    /// Enforces the oracle's `account` constraint (`at_least_one` of `name`,
+    /// `uid`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 /// OCSF `organization` object: describes characteristics of an organization
@@ -126,9 +183,28 @@ pub struct Organization {
     /// The unique identifier of the organization, e.g. an AWS Org ID.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Organization {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &["name", "ou_name", "ou_uid", "uid"];
+}
+
+impl Validate for Organization {
+    /// Enforces the oracle's `organization` constraint (`at_least_one` of
+    /// `name`, `uid`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 /// OCSF `user` object: describes the user identity and characteristics.
@@ -202,14 +278,60 @@ pub struct User {
     /// or AWS user Principal ID.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid_alt: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl User {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "account",
+        "credential_uid",
+        "display_name",
+        "domain",
+        "email_addr",
+        "forward_addr",
+        "full_name",
+        "groups",
+        "has_mfa",
+        "ldap_person",
+        "name",
+        "org",
+        "phone_number",
+        "programmatic_credentials",
+        "risk_level",
+        "risk_level_id",
+        "risk_score",
+        "type",
+        "type_id",
+        "uid",
+        "uid_alt",
+    ];
+}
+
+impl Validate for User {
+    /// Enforces the oracle's `user` constraint (`at_least_one` of `account`,
+    /// `name`, `uid`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[
+            ("account", self.account.is_some()),
+            ("name", self.name.is_some()),
+            ("uid", self.uid.is_some()),
+        ]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::validation::Validate;
 
     #[test]
     fn user_type_id_roundtrips_known_and_unrecognized() {
@@ -256,5 +378,55 @@ mod tests {
         let out = serde_json::to_value(&user).unwrap();
         assert_eq!(out["future_field"], 1);
         assert!(out.get("uid").is_none());
+    }
+
+    #[test]
+    fn actor_type_at_least_one_constraints_enforced() {
+        assert!(!Group::default().validate().is_valid());
+        assert!(!Account::default().validate().is_valid());
+        assert!(!Organization::default().validate().is_valid());
+        assert!(!User::default().validate().is_valid());
+
+        let g = Group {
+            name: Some("Engineering".into()),
+            ..Default::default()
+        };
+        assert!(g.validate().is_valid());
+        let a = Account {
+            uid: Some("123".into()),
+            ..Default::default()
+        };
+        assert!(a.validate().is_valid());
+        let o = Organization {
+            name: Some("Widget, Inc.".into()),
+            ..Default::default()
+        };
+        assert!(o.validate().is_valid());
+        // `user` is satisfied by `account` alone (neither name nor uid).
+        let u = User {
+            account: Some(Account {
+                uid: Some("123".into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(u.validate().is_valid());
+    }
+
+    #[test]
+    fn actor_type_extension_key_collision_is_invalid() {
+        let mut g = Group {
+            name: Some("E".into()),
+            ..Default::default()
+        };
+        g.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(g.validate().errors.iter().any(|e| e.attribute == "other"));
+
+        let mut u = User {
+            name: Some("j".into()),
+            ..Default::default()
+        };
+        u.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(u.validate().errors.iter().any(|e| e.attribute == "other"));
     }
 }

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::base::Timestamp;
 use crate::enums::{SeverityId, ocsf_enum};
 use crate::objects::{Group, KbArticle, Product, User};
+use crate::validation::{Validate, ValidationReport, check_other_collisions};
 
 ocsf_enum! {
     /// Normalized resource role (OCSF `resource_details.role_id`).
@@ -205,9 +206,56 @@ pub struct ResourceDetails {
     /// The availability zone within a cloud region where the resource is located.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zone: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl ResourceDetails {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "agent_list",
+        "cloud_partition",
+        "created_time",
+        "created_time_dt",
+        "criticality",
+        "data",
+        "group",
+        "hostname",
+        "ip",
+        "is_backed_up",
+        "labels",
+        "modified_time",
+        "modified_time_dt",
+        "name",
+        "namespace",
+        "owner",
+        "provider",
+        "region",
+        "resource_relationship",
+        "role",
+        "role_id",
+        "tags",
+        "type",
+        "uid",
+        "uid_alt",
+        "version",
+        "zone",
+    ];
+}
+
+impl Validate for ResourceDetails {
+    /// Enforces the oracle's `resource_details` constraint (`at_least_one` of
+    /// `name`, `uid`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 /// OCSF `compliance` object: describes the result of a compliance
@@ -353,6 +401,19 @@ mod tests {
         let out = serde_json::to_value(&r).unwrap();
         assert_eq!(out["future_field"], 1);
         assert!(out.get("uid").is_none());
+    }
+
+    #[test]
+    fn resource_details_at_least_one_and_collision_enforced() {
+        use crate::validation::Validate;
+        assert!(!ResourceDetails::default().validate().is_valid());
+        let mut ok = ResourceDetails {
+            name: Some("my-bucket".into()),
+            ..Default::default()
+        };
+        assert!(ok.validate().is_valid());
+        ok.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(ok.validate().errors.iter().any(|e| e.attribute == "other"));
     }
 
     #[test]

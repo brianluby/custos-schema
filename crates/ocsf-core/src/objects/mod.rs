@@ -1,3 +1,15 @@
+//! OCSF object types reachable from the 8 supported event classes.
+//!
+//! Every object here carries a `#[serde(flatten)] other` catch-all that
+//! losslessly round-trips attributes this codebase does not model yet.
+//! Because `flatten` accepts any unmodeled key and re-serializes it verbatim,
+//! inserting a key that *names a modeled field* (e.g. `product.other["name"]`)
+//! is invalid: it would emit a duplicate JSON key or silently shadow the
+//! modeled value. That collision is caught at
+//! [`crate::validation::Validate::validate`] time (see
+//! [`crate::validation::check_other_collisions`]), not by the type system —
+//! constructing such a value is possible in Rust, but it will not validate.
+
 mod actor_types;
 mod advisory;
 mod cloud;

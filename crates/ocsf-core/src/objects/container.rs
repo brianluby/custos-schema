@@ -1,6 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::validation::{Validate, ValidationReport, check_other_collisions};
+
 /// OCSF `image` object: describes the container image used as a template to
 /// instantiate a container.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
@@ -70,14 +72,47 @@ pub struct Container {
     /// container.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+impl Container {
+    /// Modeled wire-name set, pinned to the schemars property set by the
+    /// conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "hash",
+        "image",
+        "labels",
+        "name",
+        "network_driver",
+        "orchestrator",
+        "pod_uuid",
+        "runtime",
+        "size",
+        "tag",
+        "tags",
+        "uid",
+    ];
+}
+
+impl Validate for Container {
+    /// Enforces the oracle's `container` constraint (`at_least_one` of `uid`,
+    /// `name`) and the extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("uid", self.uid.is_some()), ("name", self.name.is_some())]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::validation::Validate;
 
     #[test]
     fn image_roundtrips_unknown_fields() {
@@ -97,5 +132,17 @@ mod tests {
         let out = serde_json::to_value(&container).unwrap();
         assert_eq!(out["future_field"], 1);
         assert!(out.get("uid").is_none());
+    }
+
+    #[test]
+    fn container_at_least_one_and_collision_enforced() {
+        assert!(!Container::default().validate().is_valid());
+        let mut ok = Container {
+            name: Some("web-1".into()),
+            ..Default::default()
+        };
+        assert!(ok.validate().is_valid());
+        ok.other.insert("uid".to_string(), serde_json::Value::Null);
+        assert!(ok.validate().errors.iter().any(|e| e.attribute == "other"));
     }
 }

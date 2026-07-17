@@ -308,6 +308,27 @@ pub fn assert_class_matches<T: JsonSchema>(name: &str) {
     );
 }
 
+/// Assert a type's `FIELD_NAMES` const is exactly its schemars-derived
+/// property set. Because the `#[serde(flatten)] other` catch-all contributes
+/// no named property, that property set is precisely the modeled wire names.
+/// This pins `FIELD_NAMES` — the modeled-name list
+/// `validation::check_other_collisions` reads to detect extension-key
+/// collisions — against drift as fields are added, removed, or renamed, so a
+/// stale const fails a conformance test rather than silently mis-validating.
+pub fn assert_field_names_match<T: JsonSchema>(kind: &str, name: &str, field_names: &[&str]) {
+    let (properties, _required) = schema_props::<T>();
+    let declared: BTreeSet<String> = field_names.iter().map(|s| (*s).to_string()).collect();
+    if declared != properties {
+        let missing: Vec<&String> = properties.difference(&declared).collect();
+        let extra: Vec<&String> = declared.difference(&properties).collect();
+        panic!(
+            "{kind} {name:?}: FIELD_NAMES does not match the schemars property set.\n  \
+             missing from FIELD_NAMES (schema has, const lacks): {missing:?}\n  \
+             extra in FIELD_NAMES (const has, schema lacks):     {extra:?}"
+        );
+    }
+}
+
 /// `known` must equal the oracle's enum values for `attr`, minus `{0, 99}`
 /// (Unknown/Other are macro-provided; some OCSF enums omit them upstream,
 /// tolerated because `Unrecognized` still accepts the value on the wire).

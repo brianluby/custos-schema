@@ -1,6 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::validation::{Validate, ValidationReport, check_other_collisions};
+
 /// OCSF `product` object: describes characteristics of a software product.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
 pub struct Product {
@@ -31,18 +33,47 @@ pub struct Product {
     /// The URL pointing towards the product.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url_string: Option<String>,
-    /// Unknown/future fields, preserved losslessly.
+    /// Unknown/future fields, preserved losslessly. Collision-checked at
+    /// [`Validate::validate`]: inserting a key that names a modeled field
+    /// (e.g. `other["name"]`) is invalid — see [`check_other_collisions`].
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
 }
 
 impl Product {
+    /// Modeled wire-name set (every field except the flattened `other`),
+    /// pinned to the schemars property set by the conformance harness.
+    #[doc(hidden)]
+    pub const FIELD_NAMES: &'static [&'static str] = &[
+        "name",
+        "vendor_name",
+        "version",
+        "cpe_name",
+        "feature",
+        "lang",
+        "path",
+        "uid",
+        "url_string",
+    ];
+
     /// Construct a `Product` with only `name` set; all other fields default.
     pub fn named(name: impl Into<String>) -> Self {
         Self {
             name: Some(name.into()),
             ..Self::default()
         }
+    }
+}
+
+impl Validate for Product {
+    /// Enforces the oracle's `product` constraint (`at_least_one` of `name`,
+    /// `uid`; from `conformance/api/objects/product.base.json`) and the
+    /// extension-key collision check.
+    fn validate(&self) -> ValidationReport {
+        let mut r = ValidationReport::new();
+        r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
+        check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
+        r
     }
 }
 
@@ -65,5 +96,29 @@ mod tests {
         let out = serde_json::to_value(&p).unwrap();
         assert_eq!(out["future_field"]["a"], 1);
         assert!(out.get("uid").is_none());
+    }
+
+    #[test]
+    fn at_least_one_name_or_uid_enforced() {
+        use crate::validation::Validate;
+        assert!(!Product::default().validate().is_valid());
+        assert!(Product::named("trivy").validate().is_valid());
+        let by_uid = Product {
+            uid: Some("p-1".into()),
+            ..Default::default()
+        };
+        assert!(by_uid.validate().is_valid());
+    }
+
+    #[test]
+    fn extension_key_collision_is_invalid() {
+        use crate::validation::Validate;
+        // A modeled key can only reach `other` via a programmatic insert
+        // (serde routes a real `uid` field to the modeled slot, not `other`).
+        let mut p = Product::named("x");
+        p.other.insert("uid".to_string(), serde_json::Value::Null);
+        let report = p.validate();
+        assert!(!report.is_valid());
+        assert!(report.errors.iter().any(|e| e.attribute == "other"));
     }
 }
