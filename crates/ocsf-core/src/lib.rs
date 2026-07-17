@@ -2,6 +2,7 @@
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 pub mod base;
+pub mod discovery;
 pub mod enums;
 pub mod findings;
 pub mod objects;
