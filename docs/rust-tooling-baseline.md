@@ -7,11 +7,11 @@ Last updated: 2026-07-17
 
 This document finalizes the Rust dependencies Custos builds on for the 1.0
 product. It implements the reuse-first decision of
-[ADR 0005](adrs/0005-adopt-existing-rust-tooling.md) and the Rust-default
-language strategy of [ADR 0003](adrs/0003-language-strategy.md), and
-supersedes the recommendations of the
-[Rust Tooling Scan (2026-07-07)](research/rust-tooling-scan-2026-07-07.md)
-where they differ.
+ADR 0005 (custos repo: docs/adrs/0005-adopt-existing-rust-tooling.md) and the
+Rust-default language strategy of ADR 0003 (custos repo:
+docs/adrs/0003-language-strategy.md), and supersedes the recommendations of
+the Rust Tooling Scan, 2026-07-07 (custos repo:
+docs/research/rust-tooling-scan-2026-07-07.md) where they differ.
 
 Every adoption below was re-verified live on 2026-07-17 against crates.io,
 the upstream repository, and advisory databases (RustSec/OSV): latest

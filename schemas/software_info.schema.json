@@ -4,6 +4,22 @@
   "definitions": {
     "Account": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "name"
+              ]
+            },
+            {
+              "required": [
+                "uid"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `account` object: a user account, cloud account, subscription, or billing unit, e.g. an AWS account or a GCP project.",
       "properties": {
         "is_disabled": {
@@ -150,6 +166,22 @@
     },
     "Container": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "uid"
+              ]
+            },
+            {
+              "required": [
+                "name"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `container` object: describes an instance of a container, a prepackaged, portable system image that runs isolated on an existing system using a container runtime like `containerd`.",
       "properties": {
         "hash": {
@@ -246,6 +278,47 @@
     },
     "Device": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "ip"
+              ]
+            },
+            {
+              "required": [
+                "uid"
+              ]
+            },
+            {
+              "required": [
+                "name"
+              ]
+            },
+            {
+              "required": [
+                "hostname"
+              ]
+            },
+            {
+              "required": [
+                "instance_uid"
+              ]
+            },
+            {
+              "required": [
+                "interface_uid"
+              ]
+            },
+            {
+              "required": [
+                "interface_name"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `device` object: describes characteristics of a device, endpoint, virtual machine, or other resource that is the subject of an event.",
       "properties": {
         "agent_list": {
@@ -767,6 +840,22 @@
     },
     "Group": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "name"
+              ]
+            },
+            {
+              "required": [
+                "uid"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `group` object: the grouping of individuals with similar rights, interests, or objectives, such as an administrative or membership group.",
       "properties": {
         "desc": {
@@ -1154,6 +1243,22 @@
     },
     "Organization": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "name"
+              ]
+            },
+            {
+              "required": [
+                "uid"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `organization` object: describes characteristics of an organization or a Cloud tenant/organizational unit, e.g. an AWS Organization or a Google Cloud Organization.",
       "properties": {
         "name": {
@@ -1424,6 +1529,22 @@
     },
     "Product": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "name"
+              ]
+            },
+            {
+              "required": [
+                "uid"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `product` object: describes characteristics of a software product.",
       "properties": {
         "cpe_name": {
@@ -1684,6 +1805,27 @@
     },
     "User": {
       "additionalProperties": true,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "account"
+              ]
+            },
+            {
+              "required": [
+                "name"
+              ]
+            },
+            {
+              "required": [
+                "uid"
+              ]
+            }
+          ]
+        }
+      ],
       "description": "OCSF `user` object: describes the user identity and characteristics.",
       "properties": {
         "account": {
@@ -1923,6 +2065,7 @@
       ]
     },
     "category_uid": {
+      "const": 5,
       "description": "The category unique identifier of the event.",
       "format": "int32",
       "type": "integer"
@@ -1935,6 +2078,7 @@
       ]
     },
     "class_uid": {
+      "const": 5020,
       "description": "The unique identifier of a class.",
       "format": "int32",
       "type": "integer"
@@ -2249,6 +2393,8 @@
     "timezone_offset": {
       "description": "The number of minutes that the reported event time is ahead or behind UTC, in the range -1,080 to +1,080.",
       "format": "int32",
+      "maximum": 1080,
+      "minimum": -1080,
       "type": [
         "integer",
         "null"
@@ -2264,7 +2410,8 @@
     "type_uid": {
       "description": "The event/finding type ID. It identifies the event's semantics and structure: class_uid * 100 + activity_id.",
       "format": "int32",
-      "type": "integer"
+      "type": "integer",
+      "x-ocsf-type-uid": "class_uid * 100 + activity_id"
     },
     "unmapped": {
       "description": "The attributes that are not mapped to the event schema."

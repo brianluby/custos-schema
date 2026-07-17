@@ -1,0 +1,69 @@
+# cargo-deny configuration, implementing the CI Obligations section of
+# docs/rust-tooling-baseline.md ("cargo-audit and cargo-deny with the
+# license configuration above and the ban list enforced") for this tree.
+#
+# Run: `cargo deny check licenses bans sources`
+#
+# `advisories` is intentionally left at its defaults (see the [advisories]
+# section below) rather than gated on in CI here: the advisory DB fetch
+# requires network access, which isn't guaranteed in every environment this
+# gate runs in. `cargo deny check advisories` can still be run manually /
+# in an environment with network access; it is not part of the required
+# `licenses bans sources` gate.
+
+[graph]
+all-features = true
+
+[licenses]
+version = 2
+# Baseline allowlist (docs/rust-tooling-baseline.md, "License Gate
+# Configuration"), extended with what this tree's actual dependency graph
+# needs beyond the four crates (ocsf-core, xtask, plus their transitive
+# deps) the baseline was written against.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    # webpki-roots (pulled in transitively by xtask's ureq -> rustls TLS
+    # stack) ships its bundled Mozilla root list under CDLA-Permissive-2.0.
+    "CDLA-Permissive-2.0",
+]
+
+# regorus-style OR-expression / NOASSERTION clarifications are not needed
+# today (regorus is not in this tree), but the baseline calls out that
+# `[[licenses.clarify]]` entries are how such cases are made explicit going
+# forward rather than silently allowed.
+
+[bans]
+multiple-versions = "warn"
+wildcards = "warn"
+deny = [
+    # docs/rust-tooling-baseline.md, "Banned Crates": memory-safe TLS only.
+    { name = "native-tls" },
+    # openssl / openssl-sys: banned graph-wide. The baseline's one scoped
+    # exception (samael's xmlsec feature) does not apply here — samael is
+    # not in this tree.
+    { name = "openssl" },
+    { name = "openssl-sys" },
+    # Deprecated/archived YAML lineage with provenance concerns for
+    # untrusted-input parsers.
+    { name = "serde_yaml" },
+    { name = "serde_yml" },
+    { name = "unsafe-libyaml" },
+    # Unmaintained; all trace export goes via OTLP per the baseline.
+    { name = "opentelemetry-jaeger" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+[advisories]
+# Defaults: no explicit ignore/deny list. The advisory DB fetch needs
+# network access; when it isn't available, `cargo deny check advisories`
+# fails closed on the fetch rather than silently passing, which is
+# correct — it is just not part of the `licenses bans sources` gate this
+# repo runs unconditionally.
