@@ -162,9 +162,14 @@ pub(crate) fn check_uids<C: OcsfClass>(
 }
 
 /// Enforce the `cloud`-profile conditional requirement: when `"cloud"` is in
-/// `metadata.profiles`, the `cloud` attribute must be present. Across all four
-/// Findings classes, `cloud` is the only attribute the FULL (all-profiles)
-/// compile marks required that the BASE compile does not.
+/// `metadata.profiles`, the `cloud` attribute must be present. Used by the
+/// four Findings classes and three of the four Discovery classes
+/// (`software_info`, `inventory_info`, `user_inventory`); across all seven,
+/// `cloud` is the only attribute the FULL (all-profiles) compile marks
+/// required that the BASE compile does not. `cloud_resources_inventory_info`
+/// is exempt: its oracle `cloud` attribute carries no `profiles` tag, so its
+/// presence is governed solely by that class's `at_least_one` constraint,
+/// not by `metadata.profiles`.
 pub(crate) fn check_cloud_profile(
     metadata: &Metadata,
     cloud_present: bool,

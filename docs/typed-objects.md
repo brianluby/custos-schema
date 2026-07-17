@@ -8,10 +8,15 @@ decision below — there is no "undecided" state.
 ## The two tiers
 
 - **`typed`** — a hand-modeled Rust struct in `crates/ocsf-core/src/objects/`
-  with full field coverage, oracle-verified shape (name/required/coarse-type
-  parity — see `crates/ocsf-core/tests/conformance*.rs`), and, where the
-  OCSF object defines one, an enforced `constraints` rule (`at_least_one`,
-  `just_one`, etc.) via `ocsf_core::validation::Validate`.
+  with full field coverage and oracle-verified shape (name/required/
+  coarse-type parity — see `crates/ocsf-core/tests/conformance*.rs`). Where
+  the OCSF object defines a `constraints` rule (`at_least_one`, `just_one`,
+  etc.), it is enforced via `ocsf_core::validation::Validate` where that
+  `Validate` impl exists — currently only `vulnerability`. Eight other typed
+  objects carry an oracle `constraints` rule that is not yet wired up
+  (`product`, `user`, `group`, `account`, `organization`, `container`,
+  `kb_article`, `device`); enforcing them is a planned follow-up before the
+  adapter crates land.
 - **`json`** — represented as opaque `serde_json::Value` (or
   `Vec<serde_json::Value>`) wherever it appears on a typed parent. The bytes
   round-trip losslessly through serde, but there is no dedicated struct, no

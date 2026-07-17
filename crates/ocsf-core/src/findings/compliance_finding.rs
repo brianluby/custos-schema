@@ -92,7 +92,7 @@ pub struct ComplianceFinding {
     pub duration: Option<i64>,
     /// The time of the most recent event included in the finding.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_time: Option<i64>,
+    pub end_time: Option<Timestamp>,
     /// The time of the most recent event included in the finding.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub end_time_dt: Option<String>,
@@ -164,7 +164,7 @@ pub struct ComplianceFinding {
     pub severity_id: SeverityId,
     /// The time of the least recent event included in the finding.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_time: Option<i64>,
+    pub start_time: Option<Timestamp>,
     /// The time of the least recent event included in the finding.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_time_dt: Option<String>,
@@ -181,7 +181,7 @@ pub struct ComplianceFinding {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status_id: Option<FindingStatusId>,
     /// The normalized event occurrence time or the finding creation time.
-    pub time: i64,
+    pub time: Timestamp,
     /// The normalized event occurrence time or the finding creation time.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_dt: Option<String>,
@@ -226,7 +226,7 @@ impl ComplianceFinding {
         finding_info: FindingInfo,
         compliance: Compliance,
     ) -> Self {
-        Self {
+        let mut s = Self {
             action: None,
             action_id: None,
             activity_id,
@@ -285,11 +285,13 @@ impl ComplianceFinding {
             time_dt: None,
             timezone_offset: None,
             type_name: None,
-            type_uid: Self::CLASS_UID as i32 * 100 + i32::from(activity_id),
+            type_uid: 0,
             unmapped: None,
             vendor_attributes: None,
             other: serde_json::Map::new(),
-        }
+        };
+        s.type_uid = OcsfClass::type_uid(&s) as i32;
+        s
     }
 }
 

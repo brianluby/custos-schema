@@ -60,11 +60,13 @@ fn all() -> Vec<(&'static str, Value)> {
 /// vendored class today but is handled the same way for forward
 /// compatibility with future oracle syncs.
 fn inject_constraints(class: &str, schema: &mut Value) -> Result<()> {
-    let oracle_path = format!("conformance/api/classes/{class}.base.json");
+    let oracle_path =
+        crate::workspace_root().join(format!("conformance/api/classes/{class}.base.json"));
     let oracle: Value = serde_json::from_str(
-        &fs::read_to_string(&oracle_path).with_context(|| format!("reading {oracle_path}"))?,
+        &fs::read_to_string(&oracle_path)
+            .with_context(|| format!("reading {}", oracle_path.display()))?,
     )
-    .with_context(|| format!("parsing {oracle_path}"))?;
+    .with_context(|| format!("parsing {}", oracle_path.display()))?;
     let Some(cons) = oracle.get("constraints").and_then(Value::as_object) else {
         return Ok(());
     };
@@ -86,20 +88,26 @@ fn inject_constraints(class: &str, schema: &mut Value) -> Result<()> {
 }
 
 pub fn generate(check: bool) -> Result<()> {
-    fs::create_dir_all("schemas")?;
+    let schemas_dir = crate::workspace_root().join("schemas");
+    if !check {
+        // Only create the directory when we intend to write into it: `--check`
+        // must not have the side effect of creating `schemas/` on a checkout
+        // that doesn't have it yet (e.g. a clean clone before first build).
+        fs::create_dir_all(&schemas_dir)?;
+    }
     let mut drift = Vec::new();
     for (class, mut schema) in all() {
         inject_constraints(class, &mut schema)?;
-        let path = format!("schemas/{class}.schema.json");
+        let path = schemas_dir.join(format!("{class}.schema.json"));
         let new = serde_json::to_string_pretty(&schema)? + "\n";
         let old = fs::read_to_string(&path).unwrap_or_default();
         if check {
             if old != new {
-                drift.push(path);
+                drift.push(path.display().to_string());
             }
         } else {
             fs::write(&path, new)?;
-            println!("wrote {path}");
+            println!("wrote {}", path.display());
         }
     }
     if check && !drift.is_empty() {

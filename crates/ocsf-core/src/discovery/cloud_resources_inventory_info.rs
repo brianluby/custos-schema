@@ -221,7 +221,7 @@ impl CloudResourcesInventoryInfo {
         severity_id: SeverityId,
         metadata: Metadata,
     ) -> Self {
-        Self {
+        let mut s = Self {
             action: None,
             action_id: None,
             activity_id,
@@ -280,10 +280,12 @@ impl CloudResourcesInventoryInfo {
             time_dt: None,
             timezone_offset: None,
             type_name: None,
-            type_uid: Self::CLASS_UID as i32 * 100 + i32::from(activity_id),
+            type_uid: 0,
             unmapped: None,
             other: serde_json::Map::new(),
-        }
+        };
+        s.type_uid = OcsfClass::type_uid(&s) as i32;
+        s
     }
 }
 

@@ -26,7 +26,7 @@ narrow, auditable contract.
 | `ocsf-spdx` | planned | SPDX SBOM ingest adapter |
 | `ocsf-osv` | planned | OSV vulnerability-database ingest adapter |
 | `ocsf-sarif` | planned | SARIF static-analysis ingest adapter |
-| `ocsf-vex` | planned | CSAF/VEX exploitability-statement ingest adapter |
+| `ocsf-vex` | planned | OpenVEX + CycloneDX-VEX exploitability-statement ingest adapter |
 
 The planned adapter crates will each expose an `IngestContext` and a
 `MappingReport` and depend on `ocsf-core` for their output types; they are
@@ -56,9 +56,10 @@ which is which and why.
 
 Build a `VulnerabilityFinding` with `new()`, validate it, and serialize it.
 This mirrors `sample_vf()` / `vulnerability_finding_validates_and_matches_oracle_jsonschema`
-in `crates/ocsf-core/tests/conformance_findings.rs`, which runs in CI against
-both the crate's own `Validate` trait and the vendored OCSF JSON-Schema
-oracle:
+in `crates/ocsf-core/tests/conformance_findings.rs`. Run it with
+`cargo test --workspace --all-features` — this is the gate developers and
+(once a pipeline exists) CI should run before merging, and it checks both
+the crate's own `Validate` trait and the vendored OCSF JSON-Schema oracle:
 
 ```rust
 use ocsf_core::base::OcsfClass;

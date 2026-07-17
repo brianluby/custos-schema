@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
-use std::path::Path;
 
 const VERSION: &str = "1.8.0";
 const FULL_PROFILES: &str = "cloud,container,host,datetime,security_control";
@@ -26,11 +25,11 @@ fn fetch(url: &str) -> Result<Value> {
 }
 
 fn write(path: &str, value: &Value) -> Result<()> {
-    let p = Path::new(path);
+    let p = crate::workspace_root().join(path);
     if let Some(dir) = p.parent() {
         fs::create_dir_all(dir)?;
     }
-    fs::write(p, serde_json::to_string_pretty(value)?)?;
+    fs::write(&p, serde_json::to_string_pretty(value)?)?;
     Ok(())
 }
 

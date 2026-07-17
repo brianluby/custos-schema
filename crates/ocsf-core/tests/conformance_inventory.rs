@@ -65,14 +65,23 @@ fn device_type_id_matches() {
     );
 }
 
-/// `risk_level_id` is shared byte-for-byte between `device` and `user`
-/// (verified against both oracle files); `device` is the representative
-/// owning object for this vocabulary test.
+/// `risk_level_id` is shared byte-for-byte between `device` and `user`;
+/// both oracle files are checked below so a future divergence between the
+/// two owners is caught rather than assumed.
 #[test]
 fn risk_level_id_matches() {
     assert_enum_matches(
         RiskLevelId::KNOWN,
         &Oracle::object_full("device"),
+        "risk_level_id",
+    );
+}
+
+#[test]
+fn risk_level_id_matches_user() {
+    assert_enum_matches(
+        RiskLevelId::KNOWN,
+        &Oracle::object_full("user"),
         "risk_level_id",
     );
 }
