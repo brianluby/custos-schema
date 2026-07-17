@@ -1,0 +1,4 @@
+# Vendored upstream OCSF compiled schema (oracle) - machine data, not hand-written
+conformance/** linguist-generated=true
+# Generated JSON Schema artifacts (cargo xtask schemas)
+schemas/** linguist-generated=true
