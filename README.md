@@ -44,8 +44,8 @@ API is stable.
 - `application_security_posture_finding` (class 2007)
 - `inventory_info` (class 5001)
 - `user_inventory` (class 5003)
-- `software_info` (class 5005)
-- `cloud_resources_inventory_info` (class 5021)
+- `software_info` (class 5020)
+- `cloud_resources_inventory_info` (class 5023)
 
 Every object each class can reach (123 objects total, per
 `conformance/closure-report.json`) is represented — either as a fully typed
