@@ -28,6 +28,15 @@ macro_rules! ocsf_enum {
             pub const KNOWN: &'static [i32] = &[$($value),+];
         }
 
+        impl ::core::default::Default for $name {
+            /// OCSF normative Unknown (0): the natural zero-value default,
+            /// and required so this enum can sit in a non-`Option` field of
+            /// a `#[derive(Default)]` struct (e.g. a required `_id` attribute).
+            fn default() -> Self {
+                Self::Unknown
+            }
+        }
+
         impl ::core::convert::From<i32> for $name {
             fn from(v: i32) -> Self {
                 match v {

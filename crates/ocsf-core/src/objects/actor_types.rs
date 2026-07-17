@@ -1,0 +1,260 @@
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+use crate::enums::ocsf_enum;
+use crate::objects::RiskLevelId;
+
+ocsf_enum! {
+    /// Normalized user type (OCSF `user.type_id`).
+    pub enum UserTypeId {
+        User = 1,
+        Admin = 2,
+        System = 3,
+        Service = 4,
+    }
+}
+
+ocsf_enum! {
+    /// Normalized account type (OCSF `account.type_id`).
+    pub enum AccountTypeId {
+        LdapAccount = 1,
+        WindowsAccount = 2,
+        AwsIamUser = 3,
+        AwsIamRole = 4,
+        GcpAccount = 5,
+        AzureAdAccount = 6,
+        MacOsAccount = 7,
+        AppleAccount = 8,
+        LinuxAccount = 9,
+        AwsAccount = 10,
+        GcpProject = 11,
+        OciCompartment = 12,
+        AzureSubscription = 13,
+        SalesforceAccount = 14,
+        GoogleWorkspace = 15,
+        ServicenowInstance = 16,
+        M365Tenant = 17,
+        EmailAccount = 18,
+        ActiveDirectoryAccount = 19,
+    }
+}
+
+/// OCSF `group` object: the grouping of individuals with similar rights,
+/// interests, or objectives, such as an administrative or membership group.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+pub struct Group {
+    /// The group description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub desc: Option<String>,
+    /// The domain where the group is defined, e.g. the LDAP or Active
+    /// Directory domain.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+    /// The group name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// The group privileges.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub privileges: Option<Vec<String>>,
+    /// The type of the group.
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    /// The unique identifier of the group, e.g. a Windows SID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    /// The alternate unique identifier of the group.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid_alt: Option<String>,
+    /// Unknown/future fields, preserved losslessly.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+/// OCSF `account` object: a user account, cloud account, subscription, or
+/// billing unit, e.g. an AWS account or a GCP project.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+pub struct Account {
+    /// Indicates if the account is disabled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_disabled: Option<bool>,
+    /// Indicates if the account is locked, e.g. due to too many failed logins.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_locked: Option<bool>,
+    /// Indicates whether synchronization with an on-premises directory
+    /// service is enabled, e.g. Microsoft Entra Connect.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_on_premises_sync_enabled: Option<bool>,
+    /// The list of labels associated with the account.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<Vec<String>>,
+    /// The name of the account, e.g. a GCP project name or an AWS account name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// The list of key:value tags associated with the account.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<serde_json::Value>>,
+    /// The account type, normalized to the caption of `type_id`.
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    /// The normalized account type identifier.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_id: Option<AccountTypeId>,
+    /// The unique identifier of the account, e.g. an AWS Account ID or a
+    /// GCP Project ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    /// Unknown/future fields, preserved losslessly.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+/// OCSF `organization` object: describes characteristics of an organization
+/// or a Cloud tenant/organizational unit, e.g. an AWS Organization or a
+/// Google Cloud Organization.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+pub struct Organization {
+    /// The name of the organization, e.g. `Widget, Inc.`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// The name of an organizational unit, Google Cloud Folder, or AWS Org Unit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ou_name: Option<String>,
+    /// The unique identifier of an organizational unit, Google Cloud
+    /// Folder, or AWS Org Unit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ou_uid: Option<String>,
+    /// The unique identifier of the organization, e.g. an AWS Org ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    /// Unknown/future fields, preserved losslessly.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+/// OCSF `user` object: describes the user identity and characteristics.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+pub struct User {
+    /// The user's account or the account associated with the user.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account: Option<Account>,
+    /// The unique identifier of the user's credential, e.g. an AWS Access
+    /// Key ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub credential_uid: Option<String>,
+    /// The display name of the user, as reported by the product.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    /// The domain where the user is defined, e.g. the LDAP or Active
+    /// Directory domain.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+    /// The user's primary email address.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email_addr: Option<String>,
+    /// The user's forwarding email address.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub forward_addr: Option<String>,
+    /// The full name of the user, as reported by the product.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_name: Option<String>,
+    /// The administrative groups to which the user belongs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub groups: Option<Vec<Group>>,
+    /// The user has a multi-factor or secondary-factor device assigned.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_mfa: Option<bool>,
+    /// The additional LDAP attributes that describe a person.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ldap_person: Option<serde_json::Value>,
+    /// The username, e.g. `janedoe1`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// Organization and org unit related to the user.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org: Option<Organization>,
+    /// The telephone number of the user.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phone_number: Option<String>,
+    /// Details about the programmatic credentials (API keys, access
+    /// tokens, certificates, etc.) associated with the user.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub programmatic_credentials: Option<Vec<serde_json::Value>>,
+    /// The risk level, normalized to the caption of `risk_level_id`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub risk_level: Option<String>,
+    /// The normalized risk level id.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub risk_level_id: Option<RiskLevelId>,
+    /// The risk score as reported by the event source.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub risk_score: Option<i32>,
+    /// The type of the user, e.g. `System`, `AWS IAM User`.
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    /// The normalized user type identifier.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_id: Option<UserTypeId>,
+    /// The unique user identifier, e.g. the Windows user SID, ActiveDirectory
+    /// DN, or AWS user ARN.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    /// The alternate user identifier, e.g. the Active Directory user GUID
+    /// or AWS user Principal ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid_alt: Option<String>,
+    /// Unknown/future fields, preserved losslessly.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn user_type_id_roundtrips_known_and_unrecognized() {
+        assert_eq!(UserTypeId::from(2), UserTypeId::Admin);
+        assert_eq!(UserTypeId::from(0), UserTypeId::Unknown);
+        assert_eq!(UserTypeId::from(1234), UserTypeId::Unrecognized(1234));
+    }
+
+    #[test]
+    fn group_roundtrips_unknown_fields() {
+        let json = r#"{"name":"Engineering","future_field":1}"#;
+        let group: Group = serde_json::from_str(json).unwrap();
+        assert_eq!(group.other["future_field"], 1);
+        let out = serde_json::to_value(&group).unwrap();
+        assert_eq!(out["future_field"], 1);
+        assert!(out.get("uid").is_none());
+    }
+
+    #[test]
+    fn account_roundtrips_unknown_fields() {
+        let json = r#"{"uid":"123456789012","future_field":1}"#;
+        let account: Account = serde_json::from_str(json).unwrap();
+        assert_eq!(account.other["future_field"], 1);
+        let out = serde_json::to_value(&account).unwrap();
+        assert_eq!(out["future_field"], 1);
+        assert!(out.get("name").is_none());
+    }
+
+    #[test]
+    fn organization_roundtrips_unknown_fields() {
+        let json = r#"{"name":"Widget, Inc.","future_field":1}"#;
+        let org: Organization = serde_json::from_str(json).unwrap();
+        assert_eq!(org.other["future_field"], 1);
+        let out = serde_json::to_value(&org).unwrap();
+        assert_eq!(out["future_field"], 1);
+        assert!(out.get("uid").is_none());
+    }
+
+    #[test]
+    fn user_roundtrips_unknown_fields() {
+        let json = r#"{"name":"janedoe1","future_field":1}"#;
+        let user: User = serde_json::from_str(json).unwrap();
+        assert_eq!(user.other["future_field"], 1);
+        let out = serde_json::to_value(&user).unwrap();
+        assert_eq!(out["future_field"], 1);
+        assert!(out.get("uid").is_none());
+    }
+}

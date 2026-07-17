@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::base::Timestamp;
 use crate::enums::ocsf_enum;
-use crate::objects::{Cve, Cwe, Product};
+use crate::objects::{Cve, Cwe, Os, Product};
 
 ocsf_enum! {
     /// Normalized install state (OCSF `install_state_id`), shared by the
@@ -55,7 +55,7 @@ pub struct Advisory {
     pub modified_time_dt: Option<String>,
     /// The operating system the Advisory applies to.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub os: Option<serde_json::Value>,
+    pub os: Option<Os>,
     /// The product where the vulnerability was discovered.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub product: Option<Product>,
@@ -117,7 +117,7 @@ pub struct KbArticle {
     pub is_superseded: Option<bool>,
     /// The operating system the KB article applies to.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub os: Option<serde_json::Value>,
+    pub os: Option<Os>,
     /// The product details the KB article applies to.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub product: Option<Product>,
