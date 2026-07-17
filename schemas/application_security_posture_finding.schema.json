@@ -298,6 +298,11 @@
           ]
         },
         "file": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/File"
+            }
+          ],
           "description": "Details about the file that contains the affected code block."
         },
         "owner": {
@@ -794,6 +799,10 @@
       "type": "object"
     },
     "ComplianceStatusId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "ConfidentialityId": {
       "format": "int32",
       "type": "integer"
     },
@@ -1639,6 +1648,10 @@
       "format": "int32",
       "type": "integer"
     },
+    "DriveTypeId": {
+      "format": "int32",
+      "type": "integer"
+    },
     "Epss": {
       "additionalProperties": true,
       "description": "OCSF `epss` object: the Exploit Prediction Scoring System estimate for a vulnerability.",
@@ -1682,6 +1695,364 @@
         "score"
       ],
       "type": "object"
+    },
+    "File": {
+      "additionalProperties": true,
+      "description": "OCSF `file` object: describes the metadata associated with a file stored in a computer system, including its attributes, properties, and organizational details.",
+      "properties": {
+        "accessed_time": {
+          "description": "The time when the file was last accessed.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "accessed_time_dt": {
+          "description": "`accessed_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accessor": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The name of the user who last accessed the object."
+        },
+        "attributes": {
+          "description": "The bitmask value that represents the file attributes.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "company_name": {
+          "description": "The name of the company that published the file, e.g. `Microsoft Corporation`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidentiality": {
+          "description": "The file content confidentiality, normalized to the caption of `confidentiality_id`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidentiality_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ConfidentialityId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The normalized identifier of the file content confidentiality indicator."
+        },
+        "created_time": {
+          "description": "The time when the file was created.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "created_time_dt": {
+          "description": "`created_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "creator": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The user that created the file."
+        },
+        "desc": {
+          "description": "The description of the file, as returned by the file system.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "drive_type": {
+          "description": "The drive type, normalized to the caption of the `drive_type_id` value.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "drive_type_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DriveTypeId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Identifies the type of a disk drive, i.e. fixed, removable, etc."
+        },
+        "encryption_details": {
+          "description": "The encryption details of the file. Should be populated if the file is encrypted."
+        },
+        "ext": {
+          "description": "The extension of the file, excluding the leading dot, e.g. `exe` from `svchost.exe`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hashes": {
+          "description": "An array of hash attributes.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "imported_symbols": {
+          "description": "A list of symbols imported by the executable file.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "internal_name": {
+          "description": "The name of the file as identified within the file itself. This contrasts with the name by which the file is known on disk.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "is_deleted": {
+          "description": "Indicates if the file was deleted from the filesystem.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_encrypted": {
+          "description": "Indicates if the file is encrypted.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_public": {
+          "description": "Indicates if the file is publicly accessible, e.g. an object's public access in AWS S3.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_readonly": {
+          "description": "Indicates that the file cannot be modified.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "is_system": {
+          "description": "The indication of whether the object is part of the operating system.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "mime_type": {
+          "description": "The Multipurpose Internet Mail Extensions (MIME) type of the file, if applicable.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modified_time": {
+          "description": "The time when the file was last modified.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "modified_time_dt": {
+          "description": "`modified_time` as RFC 3339 (datetime profile).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modifier": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The user that last modified the file."
+        },
+        "name": {
+          "description": "The name of the file, e.g. `svchost.exe`.",
+          "type": "string"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The user that owns the file/object."
+        },
+        "parent_folder": {
+          "description": "The parent folder in which the file resides, e.g. `c:\\windows\\system32`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "The full path to the file, e.g. `c:\\windows\\system32\\svchost.exe`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "product": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Product"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The product that created or installed the file."
+        },
+        "security_descriptor": {
+          "description": "The object security descriptor.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signature": {
+          "description": "The digital signature of the file."
+        },
+        "signatures": {
+          "description": "A collection of `Digital Signature` objects.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "size": {
+          "description": "The size of data, in bytes.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "storage_class": {
+          "description": "The storage class of the file, e.g. in AWS S3: `STANDARD`, `STANDARD_IA`, `GLACIER`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "description": "The list of tags; `{key:value}` pairs associated to the file.",
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "type": {
+          "description": "The file type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type_id": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FileTypeId"
+            }
+          ],
+          "description": "The file type ID. Note the distinction between a `Regular File` and an `Executable File`. If the distinction is not known, `Regular File` should be used."
+        },
+        "uid": {
+          "description": "The unique identifier of the file as defined by the storage system, such as the file system file ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uri": {
+          "description": "The file URI, such as those reported by static analysis tools.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "description": "The URL of the file, when applicable."
+        },
+        "version": {
+          "description": "The file version, e.g. `8.0.7601.17514`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "volume": {
+          "description": "The volume on the storage device where the file is located.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "xattributes": {
+          "description": "An unordered collection of zero or more name/value pairs where each pair represents a file or folder extended attribute."
+        }
+      },
+      "required": [
+        "name",
+        "type_id"
+      ],
+      "type": "object"
+    },
+    "FileTypeId": {
+      "format": "int32",
+      "type": "integer"
     },
     "FindingActionId": {
       "format": "int32",

@@ -1488,6 +1488,10 @@
       },
       "type": "object"
     },
+    "RelationshipId": {
+      "format": "int32",
+      "type": "integer"
+    },
     "RiskLevelId": {
       "format": "int32",
       "type": "integer"
@@ -1532,7 +1536,9 @@
         },
         "software_components": {
           "description": "The list of software components used in the software package.",
-          "items": true,
+          "items": {
+            "$ref": "#/definitions/SoftwareComponent"
+          },
           "type": "array"
         },
         "type": {
@@ -1579,6 +1585,96 @@
       "type": "integer"
     },
     "SeverityId": {
+      "format": "int32",
+      "type": "integer"
+    },
+    "SoftwareComponent": {
+      "additionalProperties": true,
+      "description": "OCSF `software_component` object: describes characteristics of a software component within a software package.",
+      "properties": {
+        "author": {
+          "description": "The author(s) who published the software component.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "description": "Cryptographic hash to identify the binary instance of a software component."
+        },
+        "license": {
+          "description": "The software license applied to this component.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The software component name.",
+          "type": "string"
+        },
+        "purl": {
+          "description": "The Package URL (PURL) to identify the software component. This is a URL that uniquely identifies the component, including the component's name, version, and type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "related_component": {
+          "description": "The package URL (PURL) of the component that this software component has a relationship with.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "relationship": {
+          "description": "The relationship between two software components, normalized to the caption of the `relationship_id` value.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "relationship_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RelationshipId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The normalized identifier of the relationship between two software components."
+        },
+        "type": {
+          "description": "The type of software component, normalized to the caption of the `type_id` value.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type_id": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SoftwareComponentTypeId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The type of software component."
+        },
+        "version": {
+          "description": "The software component version.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "type": "object"
+    },
+    "SoftwareComponentTypeId": {
       "format": "int32",
       "type": "integer"
     },

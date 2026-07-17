@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::base::Timestamp;
 use crate::enums::ocsf_enum;
-use crate::objects::Product;
+use crate::objects::{Product, SoftwareComponent};
 
 ocsf_enum! {
     /// Normalized software package type (OCSF `type_id`), shared by the
@@ -102,7 +102,7 @@ pub struct Sbom {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub product: Option<Product>,
     /// The list of software components used in the software package.
-    pub software_components: Vec<serde_json::Value>,
+    pub software_components: Vec<SoftwareComponent>,
     /// The type of SBOM, normalized to the caption of `type_id`.
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,

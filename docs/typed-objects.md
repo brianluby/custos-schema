@@ -67,13 +67,17 @@ is `json`-tier, so this task is not blocked.
 This rule's stated scope is the 8 classes' own required attributes (plus
 the one-level-down `metadata.product` case checked above), matching the
 task brief. It does not extend transitively through every `typed` object's
-*own* required attributes. For completeness: two `typed` objects have a
-required `object_type` child that is itself `json`-tier today —
-`affected_code.file` → `file`, and `sbom.software_components` →
-`software_component`. Both are flagged in the table below as promotion
-candidates rather than treated as a rule violation, since they fall
-outside the rule's stated scope; a future tightening of the rule to cover
-this transitive case would promote exactly these two objects.
+*own* required attributes — but the transitive case is also honored: every
+object referenced by a *required* attribute of a supported class **or
+typed object** must itself be `typed`. Two `typed` objects had a required
+`object_type` child that was still `json`-tier — `affected_code.file` →
+`file` (required, oracle `file.base.json`), and
+`sbom.software_components` → `software_component` (required array, oracle
+`sbom.full.json`). Both `file` and `software_component` have been promoted
+to `typed` below; neither has a required `object_type` attribute of its
+own (`file`'s required set is `{name, type_id}`, `software_component`'s is
+`{name, version}` — both scalar), so the promotion does not cascade
+further.
 
 ## Tier table
 
@@ -82,7 +86,7 @@ this transitive case would promote exactly these two objects.
 | account | typed | referenced by user/cloud; cloud-account correlation query path |
 | actor | json | identity/session detail beyond the core actor types; no adapter mapping target yet; promotable |
 | advisory | typed | referenced by vulnerability; adapter mapping target for vendor/OSV advisories |
-| affected_code | typed | referenced by vulnerability; code-location query path for ASPM triage; required `file` child is json-tier (promotion candidate, see above) |
+| affected_code | typed | referenced by vulnerability; code-location query path for ASPM triage; required `file` child promoted to typed (see above) |
 | affected_package | typed | referenced by vulnerability; package-level ASPM query path |
 | agent | json | cloud/infra resource-inventory detail; no adapter mapping target yet; promotable |
 | analysis_target | json | detection/anomaly enrichment detail; outside the vulnerability and compliance query surface; promotable |
@@ -125,7 +129,7 @@ this transitive case would promote exactly these two objects.
 | evidences | json | detection/anomaly enrichment detail; outside the vulnerability and compliance query surface; promotable |
 | extension | json | SBOM/vulnerability adjunct metadata; not required by any supported class; promotable |
 | feature | json | SBOM/vulnerability adjunct metadata; not required by any supported class; promotable |
-| file | json | filesystem/process detail; required by typed `affected_code` (promotion candidate, see above); promotable |
+| file | typed | required by typed `affected_code` (required-of-typed promotion rule, see above); filesystem/process query path |
 | finding_info | typed | required by 4 finding classes; core finding identity/query surface |
 | fingerprint | json | networking detail; no ASPM query path; promotable when an adapter needs endpoint-level mapping |
 | firewall_rule | json | networking detail; no ASPM query path; promotable when an adapter needs endpoint-level mapping |
@@ -178,12 +182,12 @@ this transitive case would promote exactly these two objects.
 | response | json | cloud/infra resource-inventory detail; no adapter mapping target yet; promotable |
 | rule | json | SBOM/vulnerability adjunct metadata; not required by any supported class; promotable |
 | san | json | networking detail; no ASPM query path; promotable when an adapter needs endpoint-level mapping |
-| sbom | typed | referenced by software_info/application; core SBOM ingestion target; required `software_components` child is json-tier (promotion candidate, see above) |
+| sbom | typed | referenced by software_info/application; core SBOM ingestion target; required `software_components` child promoted to typed (see above) |
 | scim | json | identity/session detail beyond the core actor types; no adapter mapping target yet; promotable |
 | script | json | filesystem/process detail; no ASPM query path; promotable |
 | service | json | cloud/infra resource-inventory detail; no adapter mapping target yet; promotable |
 | session | json | identity/session detail beyond the core actor types; no adapter mapping target yet; promotable |
-| software_component | json | SBOM/vulnerability adjunct metadata; required by typed `sbom` (promotion candidate, see above); promotable |
+| software_component | typed | required by typed `sbom` (required-of-typed promotion rule, see above); core SBOM component query surface |
 | sso | json | identity/session detail beyond the core actor types; no adapter mapping target yet; promotable |
 | sub_technique | json | MITRE ATT&CK/D3FEND detail; no ASPM query path; promotable if adapters need technique-level enrichment |
 | table | json | cloud/infra resource-inventory detail; no adapter mapping target yet; promotable |
@@ -203,5 +207,5 @@ this transitive case would promote exactly these two objects.
 | win/reg_value | json | filesystem/process detail; no ASPM query path; promotable |
 | win/win_service | json | filesystem/process detail; no ASPM query path; promotable |
 
-27 objects are `typed`, 96 are `json`, covering all 123 objects in the
+29 objects are `typed`, 94 are `json`, covering all 123 objects in the
 closure.
