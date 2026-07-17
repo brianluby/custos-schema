@@ -5,10 +5,18 @@
 //! Because `flatten` accepts any unmodeled key and re-serializes it verbatim,
 //! inserting a key that *names a modeled field* (e.g. `product.other["name"]`)
 //! is invalid: it would emit a duplicate JSON key or silently shadow the
-//! modeled value. That collision is caught at
-//! [`crate::validation::Validate::validate`] time (see
-//! [`crate::validation::check_other_collisions`]), not by the type system —
-//! constructing such a value is possible in Rust, but it will not validate.
+//! modeled value.
+//!
+//! Collision checking is only performed for objects that implement
+//! [`crate::validation::Validate`]: the 10 constrained objects
+//! (`product`, `user`, `group`, `account`, `organization`, `container`,
+//! `kb_article`, `device`, `resource_details`, `vulnerability`), plus
+//! `metadata`, plus the 8 event classes. Other typed objects (e.g., `Cloud`,
+//! `Cve`, `FindingInfo`) carry an `other` field but do not validate it. See
+//! [`crate::validation::check_other_collisions`] for the collision-check
+//! implementation. Note that serde never routes modeled keys into `other` on
+//! deserialization — the risk of collision exists only from programmatic
+//! insertion of values into the `other` map at runtime.
 
 mod actor_types;
 mod advisory;
