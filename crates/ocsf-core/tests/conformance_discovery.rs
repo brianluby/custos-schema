@@ -88,52 +88,48 @@ fn field_names_match_schema() {
 // distinct from findings' FindingStatusId); action_id/confidence_id/
 // disposition_id/risk_level_id are byte-for-byte identical to the vocab the
 // Findings classes already defined (verified), so this module reuses those
-// types rather than redefining them (per Task 9's own forward note).
+// types rather than redefining them (per Task 9's own forward note). Every
+// owning class is checked so an oracle divergence cannot hide behind one
+// representative sample.
 // ---------------------------------------------------------------------------
+
+const DISCOVERY_CLASSES: &[&str] = &[
+    "inventory_info",
+    "user_inventory",
+    "software_info",
+    "cloud_resources_inventory_info",
+];
+
+fn assert_discovery_enum_matches(known: &[i32], attr: &str) {
+    for class in DISCOVERY_CLASSES {
+        let oracle = Oracle::class_full(class);
+        assert_enum_matches(known, &oracle, attr);
+    }
+}
 
 #[test]
 fn discovery_status_id_matches_oracle() {
-    assert_enum_matches(
-        DiscoveryStatusId::KNOWN,
-        &Oracle::class_full("inventory_info"),
-        "status_id",
-    );
+    assert_discovery_enum_matches(DiscoveryStatusId::KNOWN, "status_id");
 }
 
 #[test]
 fn discovery_action_id_reuses_finding_action_id() {
-    assert_enum_matches(
-        FindingActionId::KNOWN,
-        &Oracle::class_full("inventory_info"),
-        "action_id",
-    );
+    assert_discovery_enum_matches(FindingActionId::KNOWN, "action_id");
 }
 
 #[test]
 fn discovery_confidence_id_reuses_finding_confidence_id() {
-    assert_enum_matches(
-        FindingConfidenceId::KNOWN,
-        &Oracle::class_full("inventory_info"),
-        "confidence_id",
-    );
+    assert_discovery_enum_matches(FindingConfidenceId::KNOWN, "confidence_id");
 }
 
 #[test]
 fn discovery_disposition_id_reuses_finding_disposition_id() {
-    assert_enum_matches(
-        FindingDispositionId::KNOWN,
-        &Oracle::class_full("inventory_info"),
-        "disposition_id",
-    );
+    assert_discovery_enum_matches(FindingDispositionId::KNOWN, "disposition_id");
 }
 
 #[test]
 fn discovery_risk_level_id_reuses_objects_enum() {
-    assert_enum_matches(
-        RiskLevelId::KNOWN,
-        &Oracle::class_full("inventory_info"),
-        "risk_level_id",
-    );
+    assert_discovery_enum_matches(RiskLevelId::KNOWN, "risk_level_id");
 }
 
 // ---------------------------------------------------------------------------
@@ -428,8 +424,18 @@ fn cloud_resources_inventory_info_at_least_one_constraint_enforced() {
     assert!(!report.is_valid());
     assert!(report.errors.iter().any(|e| e.attribute.contains("cloud")));
 
-    // Satisfy the constraint via `container` instead.
+    // An explicitly present, empty list satisfies the oracle's presence
+    // constraint, just as it satisfies the generated JSON Schema.
     let mut ev = ev;
+    ev.resources = Some(Vec::new());
+    assert!(
+        ev.validate().is_valid(),
+        "errors: {:?}",
+        ev.validate().errors
+    );
+
+    // Satisfy the constraint via `container` instead.
+    ev.resources = None;
     ev.container = Some(Container {
         name: Some("web-1".into()),
         ..Default::default()

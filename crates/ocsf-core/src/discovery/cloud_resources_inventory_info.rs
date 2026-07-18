@@ -374,10 +374,7 @@ impl Validate for CloudResourcesInventoryInfo {
             ("database", self.database.is_some()),
             ("databucket", self.databucket.is_some()),
             ("idp", self.idp.is_some()),
-            (
-                "resources",
-                self.resources.as_ref().is_some_and(|v| !v.is_empty()),
-            ),
+            ("resources", self.resources.is_some()),
             ("table", self.table.is_some()),
         ]);
         // Unlike the other three Discovery classes, `cloud` here carries no
@@ -408,10 +405,7 @@ impl Validate for CloudResourcesInventoryInfo {
                 ("disposition_id", self.disposition_id.is_some()),
                 ("confidence_id", self.confidence_id.is_some()),
                 ("observables", self.observables.is_some()),
-                (
-                    "resources",
-                    self.resources.as_ref().is_some_and(|v| !v.is_empty()),
-                ),
+                ("resources", self.resources.is_some()),
                 ("cloud", self.cloud.is_some()),
                 ("container", self.container.is_some()),
                 ("database", self.database.is_some()),

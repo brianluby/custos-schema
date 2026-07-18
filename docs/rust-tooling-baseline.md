@@ -5,7 +5,7 @@ Last updated: 2026-07-17
 
 ## Purpose And Scope
 
-This document finalizes the Rust dependencies Custos builds on for the 1.0
+This draft proposes the Rust dependencies Custos builds on for the 1.0
 product. It implements the reuse-first decision of
 ADR 0005 (custos repo: docs/adrs/0005-adopt-existing-rust-tooling.md) and the
 Rust-default language strategy of ADR 0003 (custos repo:
@@ -13,7 +13,7 @@ docs/adrs/0003-language-strategy.md), and supersedes the recommendations of
 the Rust Tooling Scan, 2026-07-07 (custos repo:
 docs/research/rust-tooling-scan-2026-07-07.md) where they differ.
 
-Every adoption below was re-verified live on 2026-07-17 against crates.io,
+Every proposed adoption below was re-verified live on 2026-07-17 against crates.io,
 the upstream repository, and advisory databases (RustSec/OSV): latest
 version, license, maintenance state, archived status. Versions are the pins
 at finalization; "pin exact" means the workspace pins `=x.y.z` and upgrades

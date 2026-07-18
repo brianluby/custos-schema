@@ -135,14 +135,17 @@ fn role_id_matches() {
     );
 }
 
-/// `status_id` is shared byte-for-byte between `compliance` and `check`
-/// (verified against both oracle files); `compliance` is the
-/// representative owning object for this vocabulary test.
+/// `status_id` is shared byte-for-byte between `compliance` and `check`.
 #[test]
 fn status_id_matches() {
     assert_enum_matches(
         ComplianceStatusId::KNOWN,
         &Oracle::object_full("compliance"),
+        "status_id",
+    );
+    assert_enum_matches(
+        ComplianceStatusId::KNOWN,
+        &Oracle::object_full("check"),
         "status_id",
     );
 }

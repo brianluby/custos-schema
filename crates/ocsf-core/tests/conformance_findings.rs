@@ -3,8 +3,8 @@
 //! Each class is gated three ways: `assert_class_matches` (property names both
 //! directions vs the FULL compile, required set vs the BASE compile, coarse
 //! types), `assert_enum_matches` for every `ocsf_enum!` we generated against
-//! its oracle vocabulary, and — for `VulnerabilityFinding` — a fully
-//! constructed sample validated against the vendored JSON-Schema oracle.
+//! its oracle vocabulary. A fully constructed sample for every class is
+//! validated against the vendored JSON-Schema oracle.
 
 mod conformance;
 use conformance::*;
@@ -89,54 +89,48 @@ fn field_names_match_schema() {
 // ---------------------------------------------------------------------------
 // Shared finding-enum vocabularies. status_id/action_id/confidence_id/
 // disposition_id/risk_level_id are byte-for-byte identical across all four
-// classes (verified), so one shared type is proven against a representative
-// class; risk_level_id reuses the existing `objects::RiskLevelId`. impact_id
-// occurs only on detection_finding.
+// classes (verified), so every owning class is checked; risk_level_id reuses
+// the existing `objects::RiskLevelId`. impact_id occurs only on
+// detection_finding.
 // ---------------------------------------------------------------------------
+
+const FINDING_CLASSES: &[&str] = &[
+    "vulnerability_finding",
+    "compliance_finding",
+    "detection_finding",
+    "application_security_posture_finding",
+];
+
+fn assert_finding_enum_matches(known: &[i32], attr: &str) {
+    for class in FINDING_CLASSES {
+        let oracle = Oracle::class_full(class);
+        assert_enum_matches(known, &oracle, attr);
+    }
+}
 
 #[test]
 fn finding_status_id_matches_oracle() {
-    assert_enum_matches(
-        FindingStatusId::KNOWN,
-        &Oracle::class_full("vulnerability_finding"),
-        "status_id",
-    );
+    assert_finding_enum_matches(FindingStatusId::KNOWN, "status_id");
 }
 
 #[test]
 fn finding_action_id_matches_oracle() {
-    assert_enum_matches(
-        FindingActionId::KNOWN,
-        &Oracle::class_full("vulnerability_finding"),
-        "action_id",
-    );
+    assert_finding_enum_matches(FindingActionId::KNOWN, "action_id");
 }
 
 #[test]
 fn finding_confidence_id_matches_oracle() {
-    assert_enum_matches(
-        FindingConfidenceId::KNOWN,
-        &Oracle::class_full("vulnerability_finding"),
-        "confidence_id",
-    );
+    assert_finding_enum_matches(FindingConfidenceId::KNOWN, "confidence_id");
 }
 
 #[test]
 fn finding_disposition_id_matches_oracle() {
-    assert_enum_matches(
-        FindingDispositionId::KNOWN,
-        &Oracle::class_full("vulnerability_finding"),
-        "disposition_id",
-    );
+    assert_finding_enum_matches(FindingDispositionId::KNOWN, "disposition_id");
 }
 
 #[test]
 fn finding_risk_level_id_reuses_objects_enum() {
-    assert_enum_matches(
-        RiskLevelId::KNOWN,
-        &Oracle::class_full("vulnerability_finding"),
-        "risk_level_id",
-    );
+    assert_finding_enum_matches(RiskLevelId::KNOWN, "risk_level_id");
 }
 
 #[test]
@@ -336,6 +330,13 @@ fn sample_cf() -> ComplianceFinding {
 }
 
 #[test]
+fn compliance_finding_validates_and_matches_oracle_jsonschema() {
+    let cf = sample_cf();
+    let value = serde_json::to_value(&cf).unwrap();
+    assert_valid_against_oracle_schema(&value, "compliance_finding", "base");
+}
+
+#[test]
 fn compliance_finding_profile_requirement_is_conditional() {
     // Without the cloud profile, omitting `cloud` is valid.
     let cf = sample_cf();
@@ -387,6 +388,13 @@ fn sample_df() -> DetectionFinding {
             ..Default::default()
         },
     )
+}
+
+#[test]
+fn detection_finding_validates_and_matches_oracle_jsonschema() {
+    let df = sample_df();
+    let value = serde_json::to_value(&df).unwrap();
+    assert_valid_against_oracle_schema(&value, "detection_finding", "base");
 }
 
 #[test]
@@ -452,6 +460,13 @@ fn sample_aspf() -> ApplicationSecurityPostureFinding {
         ..Default::default()
     }]);
     f
+}
+
+#[test]
+fn application_security_posture_finding_validates_and_matches_oracle_jsonschema() {
+    let f = sample_aspf();
+    let value = serde_json::to_value(&f).unwrap();
+    assert_valid_against_oracle_schema(&value, "application_security_posture_finding", "base");
 }
 
 #[test]
