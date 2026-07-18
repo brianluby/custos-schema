@@ -168,8 +168,17 @@ impl Metadata {
         "untruncated_size",
     ];
 
-    /// Construct a `Metadata` pinned to [`crate::OCSF_VERSION`], with every
-    /// other field defaulted (`None` / empty).
+    /// Constructs metadata for a product using the current OCSF version.
+    ///
+    /// All optional fields are unset, and unknown fields are initialized as an empty map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let metadata = Metadata::new(Product::default());
+    /// assert_eq!(metadata.version, crate::OCSF_VERSION);
+    /// ```
+    pub fn new(product: Product) -> Self {
     pub fn new(product: Product) -> Self {
         Self {
             product,
@@ -215,10 +224,17 @@ impl Metadata {
 }
 
 impl Validate for Metadata {
-    /// `metadata` carries no oracle `constraints` of its own, so this recurses
-    /// into its required `product` object (surfacing the product's
-    /// `at_least_one` errors under `product.*`) and runs the extension-key
-    /// collision check.
+    /// Validates the required product and checks unknown fields for collisions with modeled metadata fields.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # let metadata: Metadata = unimplemented!();
+    /// use crate::Validate;
+    ///
+    /// let report = metadata.validate();
+    /// assert!(report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_nested(&self.product, "product", &mut r);

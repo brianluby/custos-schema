@@ -133,6 +133,18 @@ fn detection_finding_artifact_encodes_impact_score_maximum() {
 /// compile time rather than assumed from the process's working directory.
 const SCHEMAS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../schemas");
 
+/// Loads and parses the committed JSON Schema artifact for an event class.
+///
+/// # Panics
+///
+/// Panics if the schema file cannot be read or contains invalid JSON.
+///
+/// # Examples
+///
+/// ```
+/// let schema = load_artifact_schema("vulnerability_finding");
+/// assert!(schema.is_object());
+/// ```
 fn load_artifact_schema(class: &str) -> Value {
     let path = format!("{SCHEMAS_DIR}/{class}.schema.json");
     let text = fs::read_to_string(&path)
@@ -141,8 +153,18 @@ fn load_artifact_schema(class: &str) -> Value {
         .unwrap_or_else(|e| panic!("failed to parse schema artifact {path}: {e}"))
 }
 
-/// Validate `event` against the committed `schemas/<class>.schema.json`,
-/// panicking with the joined error messages on failure.
+/// Validates an event against the committed schema artifact for its class.
+///
+/// # Panics
+///
+/// Panics if the schema artifact is invalid or if the event fails validation.
+///
+/// # Examples
+///
+/// ```no_run
+/// let event = serde_json::json!({ /* valid event fields */ });
+/// assert_valid_against_artifact(&event, "vulnerability_finding");
+/// ```
 fn assert_valid_against_artifact(event: &Value, class: &str) {
     let schema = load_artifact_schema(class);
     let validator = jsonschema::validator_for(&schema)
@@ -158,10 +180,14 @@ fn assert_valid_against_artifact(event: &Value, class: &str) {
     );
 }
 
-/// Assert `event` FAILS validation against `schemas/<class>.schema.json` —
-/// used to prove the injected `Product` `anyOf` constraint actually bites
-/// non-Rust consumers of the committed artifact (schema validators in other
-/// languages), not just this crate's own `Validate::validate()`.
+/// Asserts that an event fails validation against a committed class schema artifact.
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// let event = serde_json::json!({ "invalid": true });
+/// assert_invalid_against_artifact(&event, "vulnerability_finding");
+/// ```
 fn assert_invalid_against_artifact(event: &Value, class: &str) {
     let schema = load_artifact_schema(class);
     let validator = jsonschema::validator_for(&schema)
@@ -175,6 +201,14 @@ fn assert_invalid_against_artifact(event: &Value, class: &str) {
 
 // --- sample constructors, mirroring conformance_findings.rs / conformance_discovery.rs ---
 
+/// Creates a representative vulnerability finding for schema validation.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_vf();
+/// assert_eq!(finding.finding_info.uid, "f-1");
+/// ```
 fn sample_vf() -> VulnerabilityFinding {
     VulnerabilityFinding::new(
         1_752_000_000_000,
@@ -196,6 +230,16 @@ fn sample_vf() -> VulnerabilityFinding {
     )
 }
 
+/// Creates a representative compliance finding for schema validation tests.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_cf();
+/// assert_eq!(finding.finding_info.uid, "f-1");
+/// ```
+///
+/// Returns a compliance finding populated with standard test metadata and finding details.
 fn sample_cf() -> ComplianceFinding {
     ComplianceFinding::new(
         1_752_000_000_000,
@@ -211,6 +255,14 @@ fn sample_cf() -> ComplianceFinding {
     )
 }
 
+/// Creates a representative detection finding for schema validation tests.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_df();
+/// assert_eq!(finding.activity_id, DetectionFindingActivityId::Create);
+/// ```
 fn sample_df() -> DetectionFinding {
     DetectionFinding::new(
         1_752_000_000_000,
@@ -225,10 +277,18 @@ fn sample_df() -> DetectionFinding {
     )
 }
 
-/// `ApplicationSecurityPostureFinding::new` alone is intentionally invalid
-/// (its `at_least_one` constraint over [application, compliance,
-/// remediation, vulnerabilities] is unmet), so the sample here also
-/// supplies a valid `vulnerabilities` entry.
+/// Creates an application security posture finding sample that satisfies its required finding constraint.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_aspf();
+/// assert!(finding.vulnerabilities.is_some());
+/// ```
+///
+/// # Returns
+///
+/// An application security posture finding with a vulnerability entry.
 fn sample_aspf() -> ApplicationSecurityPostureFinding {
     let mut f = ApplicationSecurityPostureFinding::new(
         1_752_000_000_000,
@@ -264,6 +324,14 @@ fn sample_inventory_info() -> InventoryInfo {
     )
 }
 
+/// Creates a representative user inventory event for schema validation.
+///
+/// # Examples
+///
+/// ```
+/// let inventory = sample_user_inventory();
+/// assert_eq!(inventory.user.unwrap().name.as_deref(), Some("jdoe"));
+/// ```
 fn sample_user_inventory() -> UserInventory {
     UserInventory::new(
         1_752_000_000_000,
@@ -277,7 +345,15 @@ fn sample_user_inventory() -> UserInventory {
     )
 }
 
-/// `SoftwareInfo::new` requires a `device`; its `sbom` field carries `Sbom`.
+/// Builds a software inventory event containing package and SBOM details.
+///
+/// # Examples
+///
+/// ```
+/// let event = sample_software_info();
+/// assert!(event.package.is_some());
+/// assert!(event.sbom.is_some());
+/// ```
 fn sample_software_info() -> SoftwareInfo {
     let mut ev = SoftwareInfo::new(
         1_752_000_000_000,
@@ -306,9 +382,14 @@ fn sample_software_info() -> SoftwareInfo {
     ev
 }
 
-/// `CloudResourcesInventoryInfo::new` takes no required class object; its
-/// class-level `at_least_one` constraint over [cloud, container, database,
-/// databucket, idp, resources, table] is satisfied here via `resources`.
+/// Builds a cloud resources inventory event containing a sample resource.
+///
+/// # Examples
+///
+/// ```
+/// let event = sample_cloud_resources_inventory_info();
+/// assert!(event.resources.is_some());
+/// ```
 fn sample_cloud_resources_inventory_info() -> CloudResourcesInventoryInfo {
     let mut ev = CloudResourcesInventoryInfo::new(
         1_752_000_000_000,

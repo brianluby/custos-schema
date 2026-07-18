@@ -88,8 +88,17 @@ impl Group {
 }
 
 impl Validate for Group {
-    /// Enforces the oracle's `group` constraint (`at_least_one` of `name`,
-    /// `uid`) and the extension-key collision check.
+    /// Validates that an organization has a name or unique identifier and contains no extension-key collisions.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ocsf_core::objects::Organization;
+    /// use ocsf_core::Validate;
+    ///
+    /// let report = Organization::default().validate();
+    /// assert!(!report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
@@ -155,8 +164,17 @@ impl Account {
 }
 
 impl Validate for Account {
-    /// Enforces the oracle's `account` constraint (`at_least_one` of `name`,
-    /// `uid`) and the extension-key collision check.
+    /// Validates that an organization has a name or unique identifier and contains no extension-key collisions.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ocsf_core::objects::Organization;
+    /// use ocsf_core::Validate;
+    ///
+    /// let report = Organization::default().validate();
+    /// assert!(!report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
@@ -197,8 +215,17 @@ impl Organization {
 }
 
 impl Validate for Organization {
-    /// Enforces the oracle's `organization` constraint (`at_least_one` of
-    /// `name`, `uid`) and the extension-key collision check.
+    /// Validates that an organization has a name or unique identifier and contains no extension-key collisions.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ocsf_core::objects::Organization;
+    /// use ocsf_core::Validate;
+    ///
+    /// let report = Organization::default().validate();
+    /// assert!(!report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
@@ -314,9 +341,25 @@ impl User {
 }
 
 impl Validate for User {
-    /// Enforces the oracle's `user` constraint (`at_least_one` of `account`,
-    /// `name`, `uid`) and the extension-key collision check, then recurses
-    /// into the constrained typed children (`account`, `org`, `groups`).
+    /// Validates the user and its constrained nested actor objects.
+    ///
+    /// Validation requires at least one of `account`, `name`, or `uid`, rejects
+    /// extension fields that collide with modeled fields, and validates `account`,
+    /// `org`, and each group entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let user = User {
+    ///     name: Some("alice".to_owned()),
+    ///     ..Default::default()
+    /// };
+    /// let _report = user.validate();
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A report containing any validation errors.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[

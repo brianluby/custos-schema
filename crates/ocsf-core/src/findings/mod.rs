@@ -124,9 +124,19 @@ ocsf_enum! {
 // live in `crate::validation` since `crate::discovery` also depends on them.
 // ---------------------------------------------------------------------------
 
-/// Recurse into each reported vulnerability, surfacing its constraint errors
-/// on the parent at the indexed `vulnerabilities[i].attr` path (the
-/// nested-issue convention pinned in `validation.rs`).
+/// Validates each vulnerability and records its errors on the parent report.
+///
+/// Errors are reported using indexed paths such as `vulnerabilities[0].attribute`.
+///
+/// # Examples
+///
+/// ```
+/// let vulnerabilities: &[Vulnerability] = &[];
+/// let mut report = ValidationReport::default();
+///
+/// check_vulnerabilities(vulnerabilities, &mut report);
+/// ```
+pub(crate) fn check_vulnerabilities(vulns: &[Vulnerability], r: &mut ValidationReport) {
 pub(crate) fn check_vulnerabilities(vulns: &[Vulnerability], r: &mut ValidationReport) {
     for (i, v) in vulns.iter().enumerate() {
         for e in v.validate().errors {

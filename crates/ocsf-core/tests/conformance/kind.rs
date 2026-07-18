@@ -32,6 +32,14 @@ pub enum Kind {
 }
 
 impl std::fmt::Display for Kind {
+    /// Formats the kind as a stable, human-readable label.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let kind = Kind::String;
+    /// assert_eq!(kind.to_string(), "string");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Kind::Any => write!(f, "any"),
@@ -47,16 +55,19 @@ impl std::fmt::Display for Kind {
 }
 
 impl Kind {
-    /// Whether `ours` is an acceptable schemars rendering of something the
-    /// oracle typed as `oracle`. Not symmetric: only an `Any` schema on
-    /// *our* side is an unconditional escape hatch (a `serde_json::Value`
-    /// placeholder faithfully accepts whatever the oracle demands). An `Any`
-    /// on the *oracle* side (`json_t`) is not: if the oracle attribute is
-    /// free-form JSON, a concretely-typed field on our side (e.g. `String`)
-    /// narrows it and cannot round-trip arbitrary oracle values, so that is a
-    /// real mismatch and is caught. Likewise, oracle `float_t` (`Number`)
-    /// modeled as our `Integer` is a narrowing that cannot deserialize a
-    /// fractional value — also caught.
+    /// Determines whether an oracle-derived kind is compatible with a locally derived kind.
+    ///
+    /// Compatibility is asymmetric: `Any` on the local side accepts every oracle kind,
+    /// while wrapper references can match object or integer kinds. Array element kinds
+    /// are compared recursively.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert!(Kind::compatible(&Kind::String, &Kind::Any));
+    /// assert!(Kind::compatible(&Kind::ObjectOrEnumRef, &Kind::Object));
+    /// assert!(!Kind::compatible(&Kind::Number, &Kind::Integer));
+    /// ```
     pub fn compatible(oracle: &Kind, ours: &Kind) -> bool {
         use Kind::{Any, Array, Integer, Object, ObjectOrEnumRef};
         match (oracle, ours) {
@@ -68,18 +79,29 @@ impl Kind {
         }
     }
 
-    /// Derive the oracle's coarse kind from one attribute's raw definition
-    /// (a value out of an api-compile document's `attributes` map).
+    /// Derives a coarse value kind from an oracle attribute definition.
     ///
-    /// Dispatches on the `type` field (e.g. `"string_t"`, `"integer_t"`,
-    /// `"object_t"`), not `type_name`. A scan of every vendored 1.8.0
-    /// `conformance/api/{objects,classes}/*.json` file found `type_name` is
-    /// a human caption that does not reliably say "String" for
-    /// string-derived types — `email_t` -> "Email Address", `uuid_t` ->
-    /// "UUID", `ip_t` -> "IP Address", `mac_t` -> "MAC Address", `file_hash_t`
-    /// -> "Hash" — and is simply absent (`null`) for `object_t`. `type` is
-    /// the stable, always-present machine discriminator; `is_array` (a
-    /// sibling boolean) marks the attribute as a JSON array of that type.
+    /// The `type` field determines the scalar kind, and `is_array` wraps it as an
+    /// array kind when set to `true`.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the `type` field is missing or unrecognized.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let definition = serde_json::json!({
+    ///     "type": "string_t",
+    ///     "is_array": true
+    /// });
+    ///
+    /// assert_eq!(
+    ///     Kind::from_oracle_attr(&definition),
+    ///     Kind::Array(Box::new(Kind::String))
+    /// );
+    /// ```
+    pub fn from_oracle_attr(def: &Value) -> Kind {
     pub fn from_oracle_attr(def: &Value) -> Kind {
         let raw = def.get("type").and_then(Value::as_str).unwrap_or("");
         let scalar = match raw {
@@ -113,17 +135,29 @@ impl Kind {
         }
     }
 
-    /// Derive our coarse kind from a schemars property schema, resolving
-    /// `$ref`/`allOf`/`anyOf` wrappers against `defs` (the root schema's
-    /// `definitions`) where possible.
+    /// Derives a coarse value kind from a schemars schema, resolving references against the root definitions.
     ///
-    /// Handles every shape schemars 0.8 emits for our derive-macro types:
-    /// a bare instance type (`{"type": "string"}`), an `Option<T>` (`{"type":
-    /// ["string", "null"]}`), an array (`{"type": "array", "items": ...}`),
-    /// a nested struct (`{"allOf": [{"$ref": "..."}]}`), an `Option` of a
-    /// nested struct or `ocsf_enum!` id (`{"anyOf": [{"$ref": "..."}, {"type":
-    /// "null"}]}`), a bare `$ref` (no doc comment on the field), and the
-    /// permissive/no-type schema `serde_json::Value` fields render as.
+    /// Boolean schemas, schemas without type information, and schemas containing only `null` are treated as unconstrained.
+    /// References embedded directly or within `allOf` or `anyOf` are resolved when their definitions are available. Array
+    /// schemas include the derived kind of their elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use schemars::{schema::Schema, Map};
+    ///
+    /// let definitions = Map::new();
+    /// assert_eq!(Kind::from_schema(&Schema::Bool(true), &definitions), Kind::Any);
+    /// ```
+    ///
+    /// # Parameters
+    ///
+    /// * `schema` - The schemars schema to classify.
+    /// * `defs` - The root schema definitions used to resolve references.
+    ///
+    /// # Returns
+    ///
+    /// The coarse kind represented by the schema.
     pub fn from_schema(schema: &Schema, defs: &Map<String, Schema>) -> Kind {
         let obj = match schema {
             Schema::Bool(_) => return Kind::Any, // `true`/`{}`: fully permissive
@@ -166,6 +200,18 @@ impl Kind {
         }
     }
 
+    /// Determines the element kind for an array schema.
+    ///
+    /// Untyped or empty item definitions are treated as [`Kind::Any`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let obj = SchemaObject::default();
+    /// let defs = schemars::Map::new();
+    ///
+    /// assert_eq!(array_item_kind(&obj, &defs), Kind::Any);
+    /// ```
     fn array_item_kind(obj: &SchemaObject, defs: &Map<String, Schema>) -> Kind {
         let Some(items) = obj.array.as_ref().and_then(|a| a.items.as_ref()) else {
             return Kind::Any; // "items" omitted: heterogeneous/untyped array
@@ -178,6 +224,19 @@ impl Kind {
         }
     }
 
+    /// Resolves a schema reference against the provided definitions.
+    ///
+    /// Unresolved references are represented as [`Kind::ObjectOrEnumRef`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let defs = Map::new();
+    /// assert_eq!(
+    ///     resolve_ref("#/definitions/Missing", &defs),
+    ///     Kind::ObjectOrEnumRef
+    /// );
+    /// ```
     fn resolve_ref(reference: &str, defs: &Map<String, Schema>) -> Kind {
         reference
             .rsplit('/')
@@ -188,9 +247,26 @@ impl Kind {
     }
 }
 
-/// Pull the `$ref` out of one `allOf`/`anyOf` member, ignoring non-`$ref`
-/// siblings (namely the `{"type": "null"}` schemars adds for `Option<T>`
-/// where `T` is itself `$ref`-shaped).
+/// Extracts a `$ref` value from a schema member.
+///
+/// Non-object schemas and object schemas without a reference return `None`.
+///
+/// # Examples
+///
+/// ```
+/// use schemars::schema::{Schema, SchemaObject};
+///
+/// let schema = Schema::Object(SchemaObject {
+///     reference: Some("#/definitions/Example".to_owned()),
+///     ..Default::default()
+/// });
+///
+/// assert_eq!(schema_reference(&schema), Some("#/definitions/Example"));
+/// ```
+///
+/// # Returns
+///
+/// The referenced schema path, or `None` when the schema has no `$ref`.
 fn schema_reference(schema: &Schema) -> Option<&str> {
     match schema {
         Schema::Object(obj) => obj.reference.as_deref(),

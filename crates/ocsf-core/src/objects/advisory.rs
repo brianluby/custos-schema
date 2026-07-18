@@ -117,10 +117,29 @@ impl Advisory {
 }
 
 impl Validate for Advisory {
-    /// The `advisory` object carries no oracle `at_least_one`/`just_one`
-    /// constraint (`uid` is a plain required field enforced by the type
-    /// system). Runs the extension-key collision check and recurses into the
-    /// constrained typed child `product`.
+    /// Validates the advisory and its nested product.
+    
+    ///
+    
+    /// # Examples
+    
+    ///
+    
+    /// ```
+    
+    /// let advisory = Advisory {
+    
+    ///     uid: "ADV-1".into(),
+    
+    ///     ..Default::default()
+    
+    /// };
+    
+    ///
+    
+    /// assert!(advisory.validate().is_valid());
+    
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
@@ -210,9 +229,17 @@ impl KbArticle {
 }
 
 impl Validate for KbArticle {
-    /// Enforces the oracle's `kb_article` constraint (`at_least_one` of `uid`,
-    /// `src_url`) and the extension-key collision check, then recurses into
-    /// the constrained typed child `product`.
+    /// Validates the knowledge-base article and its nested product.
+    ///
+    /// Validation requires either `uid` or `src_url`, checks extension fields for
+    /// collisions with modeled fields, and validates `product` when present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let article = KbArticle::default();
+    /// assert!(!article.validate().is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[

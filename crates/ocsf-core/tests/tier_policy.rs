@@ -20,18 +20,39 @@ const CLASSES: &[&str] = &[
     "cloud_resources_inventory_info",
 ];
 
-/// Workspace root, resolved from the crate manifest dir at compile time.
+/// Resolves the workspace root from the crate's manifest directory at compile time.
+///
+/// # Examples
+///
+/// ```
+/// let root = workspace_root();
+/// assert!(root.is_absolute());
+/// ```
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Parse the `docs/typed-objects.md` tier table into `object -> tier`.
+/// Parses the documented object tier table into an object-to-tier map.
+
 ///
-/// Only genuine data rows are accepted: exactly three `|`-delimited cells,
-/// a non-blank object name, and a tier that is exactly `typed` or `json`.
-/// The header (`| object | tier | ... |`) and separator (`| --- | ... |`)
-/// rows are rejected by the tier whitelist, and any malformed/blank cell
-/// fails the test loudly rather than being silently skipped.
+
+/// Panics if the table contains an invalid tier, a blank object name, a duplicate
+
+/// object, or no data rows.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let tiers = parse_tier_table();
+
+/// assert!(tiers.values().all(|tier| tier == "typed" || tier == "json"));
+
+/// ```
 fn parse_tier_table() -> BTreeMap<String, String> {
     let doc = include_str!("../../../docs/typed-objects.md");
     let mut map = BTreeMap::new();
@@ -77,6 +98,18 @@ fn parse_tier_table() -> BTreeMap<String, String> {
     map
 }
 
+/// Loads and parses an oracle JSON file relative to the workspace root.
+///
+/// # Panics
+///
+/// Panics if the file cannot be read or does not contain valid JSON.
+///
+/// # Examples
+///
+/// ```
+/// let oracle = load_oracle("conformance/closure-report.json");
+/// assert!(oracle.is_object());
+/// ```
 fn load_oracle(relative: &str) -> Value {
     let path = workspace_root().join(relative);
     let text = fs::read_to_string(&path)
@@ -85,8 +118,34 @@ fn load_oracle(relative: &str) -> Value {
         .unwrap_or_else(|e| panic!("failed to parse oracle {}: {e}", path.display()))
 }
 
-/// The `(attribute, object_type)` pairs whose `requirement` is `"required"`
-/// and which carry an `object_type` (i.e. reference another OCSF object).
+/// Extracts required attribute references from an oracle.
+///
+/// # Arguments
+///
+/// * `oracle` - Oracle JSON containing an `attributes` object.
+///
+/// # Returns
+///
+/// A vector of `(attribute_name, object_type)` pairs for required attributes
+/// that reference another object.
+///
+/// # Examples
+///
+/// ```
+/// let oracle = serde_json::json!({
+///     "attributes": {
+///         "parent": {
+///             "requirement": "required",
+///             "object_type": "example_object"
+///         }
+///     }
+/// });
+///
+/// assert_eq!(
+///     required_object_refs(&oracle),
+///     vec![("parent".to_owned(), "example_object".to_owned())]
+/// );
+/// ```
 fn required_object_refs(oracle: &Value) -> Vec<(String, String)> {
     let Some(attrs) = oracle.get("attributes").and_then(Value::as_object) else {
         return Vec::new();

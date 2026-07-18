@@ -205,6 +205,14 @@ impl OcsfClass for CloudResourcesInventoryInfo {
     const CATEGORY_UID: u32 = 5;
     const CLASS_NAME: &'static str = "cloud_resources_inventory_info";
 
+    /// Converts the activity identifier to its normalized numeric value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let activity_id = CloudResourcesInventoryInfoActivityId::Log;
+    /// assert_eq!(i32::from(activity_id), 1);
+    /// ```
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -277,13 +285,28 @@ impl CloudResourcesInventoryInfo {
         "unmapped",
     ];
 
-    /// Construct a `CloudResourcesInventoryInfo` from its required
-    /// attributes, deriving `class_uid`/`category_uid`/`type_uid` from the
-    /// [`OcsfClass`] constants and `activity_id`. Every optional attribute
-    /// starts unset — this class has no class-specific required object;
-    /// callers must set at least one of `cloud`/`container`/`database`/
-    /// `databucket`/`idp`/`resources`/`table` for the instance to validate
-    /// (the oracle's `at_least_one` constraint).
+    /// Constructs a cloud resources inventory event from its required attributes.
+    ///
+    /// Optional attributes are initialized as unset, and `type_uid` is derived from
+    /// the activity identifier. At least one of `cloud`, `container`, `database`,
+    /// `databucket`, `idp`, `resources`, or `table` must be set for the event to
+    /// pass validation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let event = CloudResourcesInventoryInfo::new(
+    ///     Default::default(),
+    ///     Default::default(),
+    ///     Default::default(),
+    ///     Default::default(),
+    /// );
+    /// assert!(event.cloud.is_none());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A newly initialized `CloudResourcesInventoryInfo`.
     pub fn new(
         time: Timestamp,
         activity_id: CloudResourcesInventoryInfoActivityId,
@@ -359,6 +382,16 @@ impl CloudResourcesInventoryInfo {
 }
 
 impl Validate for CloudResourcesInventoryInfo {
+    /// Validates the event's identifiers, required resource fields, nested objects, scalar ranges, and unknown fields.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # let event: CloudResourcesInventoryInfo = todo!();
+    /// let report = event.validate();
+    /// ```
+    ///
+    /// The report also includes warnings for recommended fields that are absent.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(

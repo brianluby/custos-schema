@@ -221,6 +221,17 @@ impl OcsfClass for DetectionFinding {
     const CATEGORY_UID: u32 = 2;
     const CLASS_NAME: &'static str = "detection_finding";
 
+    /// Converts the finding's activity identifier to its numeric OCSF value.
+    ///
+    /// # Returns
+    ///
+    /// The numeric value associated with `activity_id`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(i32::from(DetectionFindingActivityId::Create), 1);
+    /// ```
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -297,9 +308,32 @@ impl DetectionFinding {
         "vulnerabilities",
     ];
 
-    /// Construct a `DetectionFinding` from its required attributes, deriving
-    /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
-    /// and `activity_id`. Every optional attribute starts unset.
+    /// Constructs a detection finding from its required attributes.
+    ///
+    /// The OCSF category, class, and type identifiers are initialized from the
+    /// class definition and activity identifier. All optional attributes start
+    /// unset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let finding = DetectionFinding::new(
+    ///     todo!(),
+    ///     DetectionFindingActivityId::Create,
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    /// );
+    ///
+    /// assert_eq!(finding.activity_id, DetectionFindingActivityId::Create);
+    /// ```
+    pub fn new(
+    time: Timestamp,
+    activity_id: DetectionFindingActivityId,
+    severity_id: SeverityId,
+    metadata: Metadata,
+    finding_info: FindingInfo,
+    ) -> Self {
     pub fn new(
         time: Timestamp,
         activity_id: DetectionFindingActivityId,
@@ -380,6 +414,20 @@ impl DetectionFinding {
 }
 
 impl Validate for DetectionFinding {
+    /// Validates the finding's identifiers, nested data, field ranges, and recommended fields.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(finding: &DetectionFinding) {
+    /// let report = finding.validate();
+    /// # let _ = report;
+    /// # }
+    /// ```
+    ///
+    /// The report contains errors for invalid data and warnings for missing recommended fields.
+    ///
+    /// @returns A validation report containing any errors and warnings found.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(

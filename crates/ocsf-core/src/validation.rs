@@ -36,17 +36,50 @@ pub struct ValidationReport {
 }
 
 impl ValidationReport {
-    /// Construct an empty report (no errors, no warnings).
+    /// Creates an empty validation report.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let report = ValidationReport::new();
+    /// assert!(report.errors.is_empty());
+    /// assert!(report.warnings.is_empty());
+    /// ```
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Whether the report is free of errors. Warnings don't affect this.
+    /// Determines whether the report contains any validation errors.
+    ///
+    /// Warnings do not affect the report's validity.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the report contains no errors, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let report = ValidationReport::new();
+    /// assert!(report.is_valid());
+    /// ```
+    pub fn is_valid(&self) -> bool {
     pub fn is_valid(&self) -> bool {
         self.errors.is_empty()
     }
 
-    /// Record an error against `attribute`.
+    /// Records a validation error for an attribute.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut report = ValidationReport::new();
+    /// report.error("name", "required");
+    ///
+    /// assert_eq!(report.errors.len(), 1);
+    /// assert_eq!(report.errors[0].attribute, "name");
+    /// assert_eq!(report.errors[0].message, "required");
+    /// ```
     pub fn error(&mut self, attribute: &str, message: impl Into<String>) {
         self.errors.push(ValidationIssue {
             attribute: attribute.to_string(),
@@ -54,7 +87,21 @@ impl ValidationReport {
         });
     }
 
-    /// Record a warning against `attribute`.
+    /// Records a warning associated with an attribute.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut report = ValidationReport::new();
+    /// report.warn("name", "recommended attribute omitted");
+    ///
+    /// assert_eq!(report.warnings.len(), 1);
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `attribute` - The attribute associated with the warning.
+    /// * `message` - The warning description.
     pub fn warn(&mut self, attribute: &str, message: impl Into<String>) {
         self.warnings.push(ValidationIssue {
             attribute: attribute.to_string(),
@@ -62,11 +109,19 @@ impl ValidationReport {
         });
     }
 
-    /// Constraint helper: record an error if none of `present` are set.
+    /// Requires at least one candidate attribute to be present.
     ///
-    /// `present` pairs each candidate attribute name with whether it's set
-    /// on the instance being validated. No error is recorded once at least
-    /// one is set.
+    /// # Parameters
+    ///
+    /// * `present` - Candidate attribute names paired with whether each is present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut report = ValidationReport::new();
+    /// report.at_least_one(&[("a", false), ("b", true)]);
+    /// assert!(report.is_valid());
+    /// ```
     pub fn at_least_one(&mut self, present: &[(&str, bool)]) {
         if present.iter().any(|(_, set)| *set) {
             return;
@@ -75,7 +130,20 @@ impl ValidationReport {
         self.error(&names, format!("at least one of [{names}] must be present"));
     }
 
-    /// Constraint helper: record an error unless exactly one of `present` is set.
+    /// Requires exactly one candidate attribute to be present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut report = ValidationReport::new();
+    /// report.just_one(&[("username", true), ("email", false)]);
+    ///
+    /// assert!(report.is_valid());
+    /// ```
+    ///
+    /// # Parameters
+    ///
+    /// * `present` - Candidate attribute names paired with whether each is present.
     pub fn just_one(&mut self, present: &[(&str, bool)]) {
         if present.iter().filter(|(_, set)| *set).count() == 1 {
             return;
@@ -84,8 +152,22 @@ impl ValidationReport {
         self.error(&names, format!("exactly one of [{names}] must be present"));
     }
 
-    /// Consume the report: `Ok(warnings)` when valid, `Err(ValidationError)`
-    /// carrying both errors and warnings otherwise.
+    /// Converts the report into a result, preserving warnings when validation succeeds
+    /// and returning all findings when it fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut report = ValidationReport::new();
+    /// report.warn("name", "recommended attribute omitted");
+    ///
+    /// let warnings = report.into_result().unwrap();
+    /// assert_eq!(warnings.len(), 1);
+    /// ```
+    ///
+    /// Returns `Ok` with the report's warnings when it contains no errors. Otherwise,
+    /// returns `Err` containing both errors and warnings.
+    pub fn into_result(self) -> Result<Vec<ValidationIssue>, ValidationError>
     pub fn into_result(self) -> Result<Vec<ValidationIssue>, ValidationError> {
         if self.is_valid() {
             Ok(self.warnings)
@@ -98,8 +180,17 @@ impl ValidationReport {
     }
 }
 
-/// Join candidate attribute names for `at_least_one`/`just_one` messages,
-/// e.g. `[cve, title]` for `&[("cve", _), ("title", _)]`.
+/// Joins candidate attribute names into a comma-separated string.
+///
+/// # Examples
+///
+/// ```
+/// # fn joined_names(present: &[(&str, bool)]) -> String {
+/// #     present.iter().map(|(name, _)| *name).collect::<Vec<_>>().join(", ")
+/// # }
+/// let names = joined_names(&[("cve", false), ("title", true)]);
+/// assert_eq!(names, "cve, title");
+/// ```
 fn joined_names(present: &[(&str, bool)]) -> String {
     present
         .iter()
@@ -134,19 +225,18 @@ pub trait Validate {
 // dependency between the two.
 // ---------------------------------------------------------------------------
 
-/// Record UID-consistency errors: `class_uid`/`category_uid` must equal the
-/// class constants, and `type_uid` must equal the normative
-/// `class_uid * 100 + activity_id`. `ev`'s trait method
-/// [`OcsfClass::type_uid`] recomputes the expected value from `activity_id`
-/// (disambiguated from the `type_uid` field by call syntax).
+/// Records errors for inconsistent class, category, activity, or type identifiers.
 ///
-/// Also records an error when the instance's `activity_id` falls outside the
-/// OCSF two-digit activity window `0..=99`. Such a value cannot produce a
-/// valid `type_uid` (see [`OcsfClass::type_uid`], which clamps it to activity
-/// `0` precisely so it can neither mint a valid uid nor collide with a
-/// neighbouring class's), so it is surfaced here rather than passing silently.
-/// Constructors derive `type_uid` via the same trait method, so construction
-/// and validation stay self-consistent for out-of-range activities.
+/// The activity identifier must be within `0..=99`, and the type identifier must
+/// match the value derived by [`OcsfClass::type_uid`].
+///
+/// # Examples
+///
+/// ```ignore
+/// let mut report = ValidationReport::new();
+/// check_uids(&event, class_uid, category_uid, type_uid, &mut report);
+/// assert!(report.is_valid());
+/// ```
 pub(crate) fn check_uids<C: OcsfClass>(
     ev: &C,
     class_uid: i32,
@@ -176,20 +266,19 @@ pub(crate) fn check_uids<C: OcsfClass>(
     }
 }
 
-/// Report every extension key in `other` that shadows a modeled field.
+/// Records errors for extension keys that collide with modeled field names.
 ///
-/// Each generated struct carries a `#[serde(flatten)] other` catch-all for
-/// forward compatibility. Because `flatten` deserializes into `other` *any*
-/// key not matched by a modeled field, and serializes `other`'s entries back
-/// out verbatim, inserting a key that names a modeled field (e.g.
-/// `other["class_uid"] = null`) is invalid: it round-trips to a document with
-/// a duplicate JSON key (`to_string`) or silently overwrites the modeled
-/// value (`to_value`). The type system can't prevent it, so it is caught here
-/// at `validate()` time. `fields` is the struct's modeled wire-name set
-/// (its `FIELD_NAMES` const, which the conformance harness pins to the
-/// schemars property set). `attribute_prefix` is prepended to the reported
-/// `other` attribute name (normally empty — nested paths are applied by
-/// [`check_nested`] as the error bubbles up to the parent).
+/// # Examples
+///
+/// ```
+/// let mut report = ValidationReport::new();
+/// let mut other = serde_json::Map::new();
+/// other.insert("class_uid".into(), serde_json::Value::Null);
+///
+/// check_other_collisions(&other, &["class_uid"], "", &mut report);
+///
+/// assert_eq!(report.errors.len(), 1);
+/// ```
 pub(crate) fn check_other_collisions(
     other: &serde_json::Map<String, serde_json::Value>,
     fields: &[&str],
@@ -222,12 +311,29 @@ pub(crate) fn check_nested<V: Validate>(child: &V, path: &str, r: &mut Validatio
     }
 }
 
-/// Enforce a documented scalar range on an optional integer attribute.
+/// Enforces a documented inclusive range for an optional integer attribute.
 ///
-/// `None` (absent) is always accepted; a present value outside `min..=max`
-/// records an error naming the range. See the [`ranges`] module for the
-/// range constants and the important caveat that these ranges live only in
-/// oracle *description* prose, not the upstream JSON Schema.
+/// Absent values are accepted. Present values outside `min..=max` add an error
+/// to the validation report.
+///
+/// # Examples
+///
+/// ```
+/// let mut report = ValidationReport::new();
+/// check_scalar_range("impact_score", Some(101), 0, 100, &mut report);
+///
+/// assert!(!report.is_valid());
+/// ```
+///
+/// `min` and `max` describe the documented range, including both boundaries.
+///
+/// # Arguments
+///
+/// * `attribute` - Name of the attribute being checked.
+/// * `value` - Optional attribute value.
+/// * `min` - Inclusive lower bound.
+/// * `max` - Inclusive upper bound.
+/// * `r` - Report to which range violations are added.
 pub(crate) fn check_scalar_range(
     attribute: &str,
     value: Option<i32>,
@@ -270,15 +376,16 @@ pub mod ranges {
     pub const IMPACT_SCORE: (&str, i32, i32) = ("impact_score", 0, 100);
 }
 
-/// Enforce the `cloud`-profile conditional requirement: when `"cloud"` is in
-/// `metadata.profiles`, the `cloud` attribute must be present. Used by the
-/// four Findings classes and three of the four Discovery classes
-/// (`software_info`, `inventory_info`, `user_inventory`); across all seven,
-/// `cloud` is the only attribute the FULL (all-profiles) compile marks
-/// required that the BASE compile does not. `cloud_resources_inventory_info`
-/// is exempt: its oracle `cloud` attribute carries no `profiles` tag, so its
-/// presence is governed solely by that class's `at_least_one` constraint,
-/// not by `metadata.profiles`.
+/// Requires the `cloud` attribute when the `cloud` profile is active in metadata.
+///
+/// # Examples
+///
+/// ```ignore
+/// check_cloud_profile(&metadata, cloud_present, &mut report);
+/// assert!(report.is_valid());
+/// ```
+///
+/// Records an error on `cloud` when the profile is active and the attribute is absent.
 pub(crate) fn check_cloud_profile(
     metadata: &Metadata,
     cloud_present: bool,
@@ -293,8 +400,37 @@ pub(crate) fn check_cloud_profile(
     }
 }
 
-/// Emit a warning for each recommended attribute that is absent. Callers pass
-/// the handful of highest-value recommended attributes for their class.
+/// Records a warning for each recommended attribute that is absent.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let mut report = ValidationReport::new();
+
+/// warn_recommended(&mut report, &[("name", true), ("description", false)]);
+
+///
+
+/// assert_eq!(report.warnings.len(), 1);
+
+/// assert_eq!(report.warnings[0].attribute, "description");
+
+/// ```
+
+///
+
+/// # Parameters
+
+///
+
+/// * `r` - Report to receive warnings.
+
+/// * `recommended` - Attribute names paired with whether each attribute is present.
 pub(crate) fn warn_recommended(r: &mut ValidationReport, recommended: &[(&str, bool)]) {
     for (name, present) in recommended {
         if !present {

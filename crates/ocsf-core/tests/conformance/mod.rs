@@ -75,6 +75,18 @@ pub struct Oracle {
 }
 
 impl Oracle {
+    /// Loads and parses an oracle JSON document from the conformance directory.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the file cannot be read or contains invalid JSON.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let oracle = Oracle::load("api/objects/example.full.json");
+    /// assert!(oracle.attributes().len() >= 0);
+    /// ```
     fn load(relative_path: &str) -> Oracle {
         let path = format!("{CONFORMANCE_DIR}/{relative_path}");
         let text = fs::read_to_string(&path)
@@ -84,27 +96,89 @@ impl Oracle {
         Oracle { value }
     }
 
-    /// `conformance/api/objects/<name>.base.json`
+    /// Loads the base oracle document for an OCSF object.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The object name used to locate `api/objects/<name>.base.json`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let oracle = Oracle::object_base("account");
+    /// let attributes = oracle.attributes();
+    /// ```
+    ///
+    /// Returns the parsed base oracle document.
     pub fn object_base(name: &str) -> Oracle {
         Self::load(&format!("api/objects/{name}.base.json"))
     }
 
-    /// `conformance/api/objects/<name>.full.json`
+    /// Loads the full oracle document for an OCSF object.
+    ///
+    /// # Parameters
+    ///
+    /// * `name` - Object name used to locate the oracle document.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let oracle = Oracle::object_full("account");
+    /// ```
     pub fn object_full(name: &str) -> Oracle {
         Self::load(&format!("api/objects/{name}.full.json"))
     }
 
-    /// `conformance/api/classes/<name>.base.json`
+    /// Loads the base oracle document for an OCSF class.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The class name used to locate the oracle document.
+    ///
+    /// # Returns
+    ///
+    /// The parsed base oracle document.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let oracle = Oracle::class_base("file_activity");
+    /// ```
+    ///
     pub fn class_base(name: &str) -> Oracle {
         Self::load(&format!("api/classes/{name}.base.json"))
     }
 
-    /// `conformance/api/classes/<name>.full.json`
+    /// Loads the full oracle document for an OCSF class.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let oracle = Oracle::class_full("activity");
+    /// let attributes = oracle.attributes();
+    /// assert!(!attributes.is_empty());
+    /// ```
+    ///
+    /// `name` is the OCSF class name.
+    ///
+    /// # Returns
+    ///
+    /// The parsed full class oracle document.
     pub fn class_full(name: &str) -> Oracle {
         Self::load(&format!("api/classes/{name}.full.json"))
     }
 
-    /// The `attributes` map: attribute name -> its raw oracle definition.
+    /// Copies the raw definitions of all attributes in the oracle document.
+    ///
+    /// Panics if the document does not contain an `attributes` object.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let oracle = Oracle::object_base("example");
+    /// let attributes = oracle.attributes();
+    /// assert!(attributes.contains_key("name"));
+    /// ```
     pub fn attributes(&self) -> BTreeMap<String, Value> {
         self.value
             .get("attributes")
@@ -124,8 +198,21 @@ impl Oracle {
             .collect()
     }
 
-    /// The integer keys of `attr`'s `enum` map, e.g. `severity_id` ->
-    /// `{0, 1, 2, 3, 4, 5, 6, 99}`.
+    /// Collects the integer keys from an attribute's oracle `enum` map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let oracle = Oracle::class_full("base_event");
+    /// let values = oracle.enum_values("severity_id");
+    ///
+    /// assert!(values.contains(&0));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the attribute has no enum map or an enum key cannot be parsed as an integer.
+    pub fn enum_values(&self, attr: &str) -> BTreeSet<i32>
     pub fn enum_values(&self, attr: &str) -> BTreeSet<i32> {
         self.value
             .get("attributes")
@@ -141,8 +228,15 @@ impl Oracle {
             .collect()
     }
 
-    /// The raw `constraints` member (e.g. `at_least_one`), or `Value::Null`
-    /// if the oracle document has none.
+    /// Retrieves the oracle document's raw `constraints` member.
+    ///
+    /// Returns `Value::Null` when the document does not define constraints.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let constraints = Oracle::object_base("file").constraints();
+    /// ```
     pub fn constraints(&self) -> Value {
         self.value
             .get("constraints")
@@ -151,11 +245,15 @@ impl Oracle {
     }
 }
 
-/// Describe a non-object root schema shape for diagnostics: which JSON
-/// Schema wrapper (`$ref`, `allOf`, `anyOf`, `oneOf`, a bare scalar/array
-/// instance type, or an enum-valued schema) was found instead of the
-/// expected `object` validation, so a future newtype or enum root — where
-/// `T` isn't a plain struct — is diagnosable from the panic message alone.
+/// Describes why a root schema does not contain object validation.
+///
+/// # Examples
+///
+/// ```
+/// let description = describe_non_object_schema(&schemars::schema::SchemaObject::default());
+/// assert!(description.contains("empty/unconstrained"));
+/// ```
+fn describe_non_object_schema(schema: &SchemaObject) -> String
 fn describe_non_object_schema(schema: &SchemaObject) -> String {
     if let Some(reference) = &schema.reference {
         return format!("a bare $ref ({reference:?}, not wrapped in an object)");
@@ -193,6 +291,23 @@ struct SchemaShape {
     kinds: BTreeMap<String, Kind>,
 }
 
+/// Extracts the property names, required fields, and coarse property kinds from a type's JSON schema.
+///
+/// # Panics
+///
+/// Panics if the generated schema does not define object validation.
+///
+/// # Examples
+///
+/// ```
+/// #[derive(schemars::JsonSchema)]
+/// struct Event {
+///     id: String,
+/// }
+///
+/// let shape = schema_shape::<Event>();
+/// assert!(shape.properties.contains("id"));
+/// ```
 fn schema_shape<T: JsonSchema>() -> SchemaShape {
     let root = schemars::schema_for!(T);
     let object = root.schema.object.as_ref().unwrap_or_else(|| {
@@ -216,25 +331,40 @@ fn schema_shape<T: JsonSchema>() -> SchemaShape {
     }
 }
 
-/// The property names and required-field names of `T`'s schemars-derived
-/// root object schema.
+/// Retrieves the property and required-field names from `T`'s root object schema.
+///
+/// # Examples
+///
+/// ```
+/// #[derive(schemars::JsonSchema)]
+/// struct Event {
+///     id: String,
+/// }
+///
+/// let (properties, required) = schema_props::<Event>();
+/// assert!(properties.contains("id"));
+/// assert!(required.contains("id"));
+/// ```
 pub fn schema_props<T: JsonSchema>() -> (BTreeSet<String>, BTreeSet<String>) {
     let shape = schema_shape::<T>();
     (shape.properties, shape.required)
 }
 
-/// The mechanical gate for every struct task:
-/// 1. Every FULL-compile oracle attribute name is one of our schema's
-///    properties (missing field -> panic with the list).
-/// 2. Every property of ours is a FULL-compile oracle attribute name,
-///    strictly both ways (the flattened `other` map adds no named property).
-/// 3. The BASE-compile oracle's required set equals our schema's required
-///    set exactly (profile requirements are conditional and belong to
-///    `validate()`, not the type system).
-/// 4. For every property present in BOTH the FULL oracle and our schema,
-///    the oracle's coarse type (`Kind::from_oracle_attr`) is compatible
-///    with ours (`Kind::from_schema` + `Kind::compatible`) — see the
-///    module doc for exactly what "compatible" does and does not mean.
+/// Compares a modeled schema shape with the corresponding OCSF oracle definitions.
+///
+/// The comparison verifies exact property names, required attributes, and compatible
+/// coarse attribute kinds between the schema and the FULL and BASE oracle documents.
+///
+/// # Panics
+///
+/// Panics when property names, required attributes, or attribute kinds differ from
+/// the oracle definitions.
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_matches::<MyEvent>("class", "my_event", &full_oracle, &base_oracle);
+/// ```
 fn assert_matches<T: JsonSchema>(kind: &str, name: &str, full: &Oracle, base: &Oracle) {
     let shape = schema_shape::<T>();
     let schema_properties = &shape.properties;
@@ -288,7 +418,14 @@ fn assert_matches<T: JsonSchema>(kind: &str, name: &str, full: &Oracle, base: &O
     }
 }
 
-/// `objects/<name>.{base,full}.json`
+/// Verifies that a modeled object schema matches its vendored OCSF oracle definition.
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_object_matches::<MyObject>("my_object");
+/// ```
+pub fn assert_object_matches<T: JsonSchema>(name: &str) {
 pub fn assert_object_matches<T: JsonSchema>(name: &str) {
     assert_matches::<T>(
         "object",
@@ -298,7 +435,16 @@ pub fn assert_object_matches<T: JsonSchema>(name: &str) {
     );
 }
 
-/// `classes/<name>.{base,full}.json`
+/// Verifies that a modeled class matches the corresponding OCSF oracle schema.
+///
+/// # Examples
+///
+/// ```no_run
+/// # use schemars::JsonSchema;
+/// # #[derive(JsonSchema)]
+/// # struct ExampleClass;
+/// assert_class_matches::<ExampleClass>("example");
+/// ```
 pub fn assert_class_matches<T: JsonSchema>(name: &str) {
     assert_matches::<T>(
         "class",
@@ -308,13 +454,23 @@ pub fn assert_class_matches<T: JsonSchema>(name: &str) {
     );
 }
 
-/// Assert a type's `FIELD_NAMES` const is exactly its schemars-derived
-/// property set. Because the `#[serde(flatten)] other` catch-all contributes
-/// no named property, that property set is precisely the modeled wire names.
-/// This pins `FIELD_NAMES` — the modeled-name list
-/// `validation::check_other_collisions` reads to detect extension-key
-/// collisions — against drift as fields are added, removed, or renamed, so a
-/// stale const fails a conformance test rather than silently mis-validating.
+/// Verifies that a type's declared field names match its schemars-derived properties.
+///
+/// # Examples
+///
+/// ```
+/// #[derive(schemars::JsonSchema)]
+/// struct Event {
+///     id: String,
+/// }
+///
+/// assert_field_names_match::<Event>("object", "Event", &["id"]);
+/// ```
+///
+/// # Panics
+///
+/// Panics when `field_names` differs from the type's schema properties.
+pub fn assert_field_names_match<T: JsonSchema>(kind: &str, name: &str, field_names: &[&str]) {
 pub fn assert_field_names_match<T: JsonSchema>(kind: &str, name: &str, field_names: &[&str]) {
     let (properties, _required) = schema_props::<T>();
     let declared: BTreeSet<String> = field_names.iter().map(|s| (*s).to_string()).collect();
@@ -329,9 +485,23 @@ pub fn assert_field_names_match<T: JsonSchema>(kind: &str, name: &str, field_nam
     }
 }
 
-/// `known` must equal the oracle's enum values for `attr`, minus `{0, 99}`
-/// (Unknown/Other are macro-provided; some OCSF enums omit them upstream,
-/// tolerated because `Unrecognized` still accepts the value on the wire).
+/// Verifies that an enum's known values match the oracle vocabulary, excluding the
+
+/// reserved `0` and `99` values.
+
+///
+
+/// # Examples
+
+///
+
+/// ```rust,no_run
+
+/// let oracle = Oracle::object_full("file");
+
+/// assert_enum_matches(&[0, 1, 2], &oracle, "type_id");
+
+/// ```
 pub fn assert_enum_matches(known: &[i32], oracle: &Oracle, attr: &str) {
     let known: BTreeSet<i32> = known.iter().copied().collect();
     let mut expected = oracle.enum_values(attr);
@@ -345,9 +515,19 @@ pub fn assert_enum_matches(known: &[i32], oracle: &Oracle, attr: &str) {
     }
 }
 
-/// Validate `event` against `conformance/jsonschema/classes/<class>.<variant>.json`
-/// (`variant` = `"base"` | `"full"`), panicking with the joined error
-/// messages on failure.
+/// Validates an event against a vendored class and variant JSON Schema oracle.
+///
+/// # Panics
+///
+/// Panics if the oracle cannot be read, parsed, or compiled, or if the event
+/// fails validation.
+///
+/// # Examples
+///
+/// ```
+/// let event = serde_json::json!({});
+/// assert_valid_against_oracle_schema(&event, "network_activity", "base");
+/// ```
 pub fn assert_valid_against_oracle_schema(event: &Value, class: &str, variant: &str) {
     let path = format!("{CONFORMANCE_DIR}/jsonschema/classes/{class}.{variant}.json");
     let text = fs::read_to_string(&path)

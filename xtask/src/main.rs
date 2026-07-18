@@ -10,6 +10,18 @@ pub(crate) fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
 }
 
+/// Dispatches the requested workspace maintenance command.
+///
+/// # Examples
+///
+/// ```no_run
+/// let result = main();
+/// assert!(result.is_ok());
+/// ```
+///
+/// Supported commands include `sync-oracle`, `schemas`, and `schemas --check`.
+///
+/// Returns an error if command parsing or execution fails.
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match parse_command(&args)? {
@@ -24,6 +36,23 @@ enum Command {
     Schemas { check: bool },
 }
 
+/// Parses supported xtask command-line arguments.
+///
+/// Recognized commands are `sync-oracle`, `schemas`, and `schemas --check`.
+///
+/// # Examples
+///
+/// ```
+/// let args = vec!["schemas".to_owned(), "--check".to_owned()];
+/// assert!(matches!(
+///     parse_command(&args),
+///     Ok(Command::Schemas { check: true })
+/// ));
+/// ```
+///
+/// # Errors
+///
+/// Returns an error when the arguments do not match a supported command form.
 fn parse_command(args: &[String]) -> anyhow::Result<Command> {
     match args {
         [command] if command == "sync-oracle" => Ok(Command::SyncOracle),

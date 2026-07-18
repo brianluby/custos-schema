@@ -99,8 +99,18 @@ impl Container {
 }
 
 impl Validate for Container {
-    /// Enforces the oracle's `container` constraint (`at_least_one` of `uid`,
-    /// `name`) and the extension-key collision check.
+    /// Validates that the container has a `uid` or `name` and that unknown fields do not collide with known fields.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut container = Container::default();
+    /// container.name = Some("web".to_string());
+    ///
+    /// assert!(container.validate().is_valid());
+    /// ```
+    ///
+    /// The returned report contains any validation failures.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("uid", self.uid.is_some()), ("name", self.name.is_some())]);

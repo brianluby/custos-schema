@@ -210,6 +210,15 @@ impl OcsfClass for ComplianceFinding {
     const CATEGORY_UID: u32 = 2;
     const CLASS_NAME: &'static str = "compliance_finding";
 
+    /// Converts the finding's activity identifier to its normalized integer value.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// let value = finding.activity_id_value();
+    /// assert_eq!(value, 1);
+    /// ```
+    fn activity_id_value(&self) -> i32
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -283,9 +292,30 @@ impl ComplianceFinding {
         "vendor_attributes",
     ];
 
-    /// Construct a `ComplianceFinding` from its required attributes, deriving
-    /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
-    /// and `activity_id`. Every optional attribute starts unset.
+    /// Constructs a compliance finding from its required attributes and derives its normalized identifiers.
+    ///
+    /// Optional attributes are initialized as unset, and the type identifier is derived from the
+    /// class, category, and activity identifiers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # let time: Timestamp = unimplemented!();
+    /// # let activity_id: ComplianceFindingActivityId = unimplemented!();
+    /// # let severity_id: SeverityId = unimplemented!();
+    /// # let metadata: Metadata = unimplemented!();
+    /// # let finding_info: FindingInfo = unimplemented!();
+    /// # let compliance: Compliance = unimplemented!();
+    /// let finding = ComplianceFinding::new(
+    ///     time,
+    ///     activity_id,
+    ///     severity_id,
+    ///     metadata,
+    ///     finding_info,
+    ///     compliance,
+    /// );
+    /// assert_eq!(finding.activity_id, activity_id);
+    /// ```
     pub fn new(
         time: Timestamp,
         activity_id: ComplianceFindingActivityId,
@@ -364,6 +394,16 @@ impl ComplianceFinding {
 }
 
 impl Validate for ComplianceFinding {
+    /// Validates the finding's identifiers, nested objects, field ranges, unknown fields, and recommended attributes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(finding: &ComplianceFinding) {
+    /// let report = finding.validate();
+    /// # let _ = report;
+    /// # }
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(

@@ -183,6 +183,13 @@ impl OcsfClass for InventoryInfo {
     const CATEGORY_UID: u32 = 5;
     const CLASS_NAME: &'static str = "inventory_info";
 
+    /// Converts the activity identifier to its numeric value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(i32::from(InventoryInfoActivityId::Log), 1);
+    /// ```
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -248,9 +255,25 @@ impl InventoryInfo {
         "unmapped",
     ];
 
-    /// Construct an `InventoryInfo` from its required attributes, deriving
-    /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
-    /// and `activity_id`. Every optional attribute starts unset.
+    /// Constructs an `InventoryInfo` from its required attributes.
+    ///
+    /// Class, category, and type identifiers are derived from the OCSF class
+    /// metadata and activity identifier. Optional attributes are initialized as
+    /// unset.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let inventory = InventoryInfo::new(
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    /// );
+    ///
+    /// assert_eq!(inventory.category_uid, InventoryInfo::CATEGORY_UID as i32);
+    /// ```
     pub fn new(
         time: Timestamp,
         activity_id: InventoryInfoActivityId,
@@ -320,6 +343,20 @@ impl InventoryInfo {
 }
 
 impl Validate for InventoryInfo {
+    /// Validates the inventory information and its nested fields against the OCSF schema.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(inventory_info: &InventoryInfo) {
+    /// let report = inventory_info.validate();
+    /// # let _ = report;
+    /// # }
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A validation report containing errors and warnings found in the inventory information.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(

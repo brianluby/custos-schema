@@ -213,6 +213,18 @@ impl OcsfClass for ApplicationSecurityPostureFinding {
     const CATEGORY_UID: u32 = 2;
     const CLASS_NAME: &'static str = "application_security_posture_finding";
 
+    /// Converts the finding's activity identifier to its numeric value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let activity_id = ApplicationSecurityPostureFindingActivityId::Create;
+    /// assert_eq!(i32::from(activity_id), 1);
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The numeric value associated with the finding's activity identifier.
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -286,9 +298,23 @@ impl ApplicationSecurityPostureFinding {
         "vulnerabilities",
     ];
 
-    /// Construct a `ApplicationSecurityPostureFinding` from its required attributes, deriving
-    /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
-    /// and `activity_id`. Every optional attribute starts unset.
+    /// Constructs an application security posture finding from its required attributes.
+    ///
+    /// Identity fields are initialized from the OCSF class constants and activity,
+    /// while optional attributes remain unset.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let finding = ApplicationSecurityPostureFinding::new(
+    ///     unimplemented!(),
+    ///     unimplemented!(),
+    ///     unimplemented!(),
+    ///     unimplemented!(),
+    ///     unimplemented!(),
+    /// );
+    /// assert!(finding.application.is_none());
+    /// ```
     pub fn new(
         time: Timestamp,
         activity_id: ApplicationSecurityPostureFindingActivityId,
@@ -366,6 +392,19 @@ impl ApplicationSecurityPostureFinding {
 }
 
 impl Validate for ApplicationSecurityPostureFinding {
+    /// Validates the finding against OCSF schema and consistency requirements.
+    ///
+    /// The validation report includes errors for invalid identifiers, missing finding
+    /// context, invalid nested values, out-of-range timezone offsets, and collisions
+    /// between modeled and unknown fields. It also includes warnings for recommended
+    /// fields that are absent.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let report = finding.validate();
+    /// assert!(report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(

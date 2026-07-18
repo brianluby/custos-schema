@@ -392,10 +392,23 @@ impl Device {
 }
 
 impl Validate for Device {
-    /// Enforces the oracle's `device` constraint — `at_least_one` of `ip`,
-    /// `uid`, `name`, `hostname`, `instance_uid`, `interface_uid`,
-    /// `interface_name` (from `conformance/api/objects/device.base.json`) —
-    /// and the extension-key collision check.
+    /// Validates the device identity constraint, extension fields, and nested objects.
+    ///
+    /// A device is valid when at least one identifying field is present, extension keys
+    /// do not collide with modeled fields, and all present nested objects are valid.
+    ///
+    /// # Returns
+    ///
+    /// A report containing all validation findings.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ocsf_core::{Device, Validate};
+    ///
+    /// let report = Device::default().validate();
+    /// assert!(!report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[

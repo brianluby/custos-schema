@@ -7,12 +7,16 @@ use serde_json::{Map, Value, json};
 use std::collections::BTreeSet;
 use std::fs;
 
-/// (class_name, generated schema, class_uid, category_uid) for every
-/// supported event class. The UIDs come from each type's [`OcsfClass`]
-/// trait consts — the Rust source of truth — so [`inject_class_uid_consts`]
-/// can cross-check them against the oracle's class-level `uid`/
-/// `category_uid` instead of hard-coding a second table that could drift
-/// from the one already encoded in the generated types.
+/// Collects generated schemas and OCSF UID constants for each supported event class.
+///
+/// # Examples
+///
+/// ```
+/// let classes = all();
+/// assert!(!classes.is_empty());
+/// assert_eq!(classes[0].0, "vulnerability_finding");
+/// ```
+fn all() -> Vec<(&'static str, Value, u32, u32)>
 fn all() -> Vec<(&'static str, Value, u32, u32)> {
     vec![
         (
@@ -74,7 +78,23 @@ fn all() -> Vec<(&'static str, Value, u32, u32)> {
     ]
 }
 
-/// Read and parse a JSON file relative to the workspace root.
+/// Reads and parses a JSON file relative to the workspace root.
+///
+/// # Arguments
+///
+/// * `rel_path` - Path to the JSON file relative to the workspace root.
+///
+/// # Examples
+///
+/// ```
+/// let oracle = read_oracle_json("conformance/api/classes/detection_finding.base.json")?;
+/// assert!(oracle.is_object());
+/// # Ok::<(), anyhow::Error>(())
+/// ```
+///
+/// # Returns
+///
+/// The parsed JSON value.
 fn read_oracle_json(rel_path: &str) -> Result<Value> {
     let path = crate::workspace_root().join(rel_path);
     serde_json::from_str(
@@ -83,12 +103,25 @@ fn read_oracle_json(rel_path: &str) -> Result<Value> {
     .with_context(|| format!("parsing {}", path.display()))
 }
 
-/// Build the `allOf` array encoding an oracle `constraints` object
-/// (`at_least_one` -> `anyOf`, `just_one` -> `oneOf`), or an empty `Vec` if
-/// `oracle` carries no `constraints`. Shared between class-level constraint
-/// injection ([`inject_constraints`]) and nested-object-level constraint
-/// injection ([`inject_nested_object_constraints`]) — the oracle shape is
-/// identical for both classes and objects.
+/// Converts oracle field constraints into JSON Schema `allOf` clauses.
+///
+/// `at_least_one` constraints become `anyOf` clauses, while `just_one`
+/// constraints become `oneOf` clauses. Returns an empty vector when the oracle
+/// has no object-valued `constraints` field.
+///
+/// # Examples
+///
+/// ```
+/// let oracle = serde_json::json!({
+///     "constraints": {
+///         "at_least_one": ["title", "description"],
+///         "just_one": ["id", "uid"]
+///     }
+/// });
+///
+/// let all_of = constraint_all_of(&oracle);
+/// assert_eq!(all_of.len(), 2);
+/// ```
 fn constraint_all_of(oracle: &Value) -> Vec<Value> {
     let Some(cons) = oracle.get("constraints").and_then(Value::as_object) else {
         return Vec::new();
@@ -107,15 +140,30 @@ fn constraint_all_of(oracle: &Value) -> Vec<Value> {
     all_of
 }
 
-/// A single presence clause for one `at_least_one`/`just_one` member.
+/// Builds a schema clause requiring an attribute to be present and contain a non-null value.
 ///
-/// `{"required": [attr]}` alone only checks that the key exists — a nullable
-/// attribute set to `null` (e.g. `{"name": null}` on `product`) would still
-/// satisfy it. Pairing `required` with a `{"not": {"type": "null"}}` predicate
-/// on the same attribute makes the clause demand a present *and* non-null
-/// value, matching the Rust `Option::is_some` presence convention that
-/// `Validate` enforces. Preserves the surrounding `anyOf`/`oneOf` semantics —
-/// this only tightens each individual branch.
+/// # Examples
+///
+/// ```
+/// let clause = present_non_null(&serde_json::json!("name"));
+/// assert_eq!(
+///     clause,
+///     serde_json::json!({
+///         "required": ["name"],
+///         "properties": {
+///             "name": { "not": { "type": "null" } }
+///         }
+///     })
+/// );
+/// ```
+///
+/// # Arguments
+///
+/// * `attr` - The attribute name to require.
+///
+/// # Returns
+///
+/// A JSON Schema presence clause, or a basic required-property clause when `attr` is not a string.
 fn present_non_null(attr: &Value) -> Value {
     let Some(name) = attr.as_str() else {
         // Non-string constraint member (not present in the vendored oracle);
@@ -131,16 +179,24 @@ fn present_non_null(attr: &Value) -> Value {
     })
 }
 
-/// Inject OCSF root-class constraints schemars cannot express, read from the
-/// oracle.
+/// Injects oracle-defined root-class constraints into a generated JSON Schema.
 ///
-/// Oracle shape (verified against `conformance/api/classes/*.base.json`):
-/// `constraints` is either `null` (most classes) or an object with an
-/// `at_least_one` array of attribute names (currently the only constraint
-/// kind present: `application_security_posture_finding` and
-/// `cloud_resources_inventory_info`). `just_one` is not present in any
-/// vendored class today but is handled the same way for forward
-/// compatibility with future oracle syncs.
+/// Applies `at_least_one` and `just_one` constraints as `allOf` fragments. If the
+/// oracle contains no supported constraints, the schema remains unchanged.
+///
+/// # Examples
+///
+/// ```
+/// let oracle = serde_json::json!({
+///     "constraints": { "at_least_one": ["a", "b"] }
+/// });
+/// let mut schema = serde_json::json!({});
+///
+/// inject_constraints(&oracle, &mut schema)?;
+///
+/// assert!(schema["allOf"].is_array());
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 fn inject_constraints(oracle: &Value, schema: &mut Value) -> Result<()> {
     let all_of = constraint_all_of(oracle);
     if !all_of.is_empty() {
@@ -169,9 +225,17 @@ const CONSTRAINED_NESTED_OBJECTS: &[(&str, &str)] = &[
     ("Vulnerability", "vulnerability"),
 ];
 
-/// Inject the same class of oracle constraint as [`inject_constraints`], but
-/// onto the nested object definitions schemars collects under the schema's
-/// `definitions` map, per [`CONSTRAINED_NESTED_OBJECTS`].
+/// Applies oracle-defined constraints to matching nested object definitions in a schema.
+///
+/// Schemas without a `definitions` object or without matching nested definitions are left unchanged.
+///
+/// # Examples
+///
+/// ```
+/// let mut schema = serde_json::json!({});
+/// inject_nested_object_constraints(&mut schema)?;
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 fn inject_nested_object_constraints(schema: &mut Value) -> Result<()> {
     let Some(defs) = schema.get_mut("definitions").and_then(Value::as_object_mut) else {
         return Ok(());
@@ -189,18 +253,32 @@ fn inject_nested_object_constraints(schema: &mut Value) -> Result<()> {
     Ok(())
 }
 
-/// Inject class-identity constraints schemars cannot derive from the struct
-/// alone:
+/// Adds class identity constraints and the normative `type_uid` expression to a schema.
 ///
-/// - `const` on `class_uid`/`category_uid`, from each class's [`OcsfClass`]
-///   trait consts — cross-checked here against the oracle's top-level
-///   `uid`/`category_uid` so the generated artifact and the Rust source of
-///   truth cannot silently drift apart; a mismatch fails the generator with
-///   a clear error rather than emitting an incorrect `const`.
-/// - An `x-ocsf-type-uid` annotation on `type_uid` documenting its
-///   normative arithmetic (`class_uid * 100 + activity_id`), which is not a
-///   JSON Schema keyword and so cannot be expressed as a structural
-///   constraint.
+/// Validates that the oracle's class and category identifiers match the supplied
+/// [`OcsfClass`] constants. Returns an error when either identifier is missing,
+/// non-integer, or mismatched.
+///
+/// # Examples
+///
+/// ```
+/// use serde_json::json;
+///
+/// let oracle = json!({ "uid": 1, "category_uid": 2 });
+/// let mut schema = json!({
+///     "properties": {
+///         "class_uid": {},
+///         "category_uid": {},
+///         "type_uid": {}
+///     }
+/// });
+///
+/// inject_class_uid_consts("example", &oracle, &mut schema, 1, 2)?;
+///
+/// assert_eq!(schema["properties"]["class_uid"]["const"], 1);
+/// assert_eq!(schema["properties"]["category_uid"]["const"], 2);
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 fn inject_class_uid_consts(
     class: &str,
     oracle: &Value,
@@ -247,13 +325,25 @@ fn inject_class_uid_consts(
     Ok(())
 }
 
-/// Inject `minimum`/`maximum` onto properties that carry a documented
-/// scalar range in `ocsf_core::validation::ranges` — stricter than the
-/// upstream OCSF JSON Schema (see that module's doc comment), but a
-/// deliberate divergence `validate()` already enforces at the Rust level;
-/// this brings the generated schema artifact in line with it.
-/// `timezone_offset` is present on all 8 classes; `impact_score` only on
-/// `detection_finding`.
+/// Adds documented scalar range constraints to the schema properties.
+///
+/// Applies the timezone offset range to every class and the impact score range
+/// to detection-finding schemas.
+///
+/// # Examples
+///
+/// ```
+/// let mut schema = serde_json::json!({
+///     "properties": {
+///         "timezone_offset": {}
+///     }
+/// });
+///
+/// inject_scalar_ranges("example", &mut schema);
+///
+/// assert!(schema["properties"]["timezone_offset"]["minimum"].is_number());
+/// assert!(schema["properties"]["timezone_offset"]["maximum"].is_number());
+/// ```
 fn inject_scalar_ranges(class: &str, schema: &mut Value) {
     let Some(props) = schema.get_mut("properties").and_then(Value::as_object_mut) else {
         return;
@@ -264,8 +354,21 @@ fn inject_scalar_ranges(class: &str, schema: &mut Value) {
     }
 }
 
-/// Set `minimum`/`maximum` on `props[attr]` from an inclusive `(attr, min,
-/// max)` range constant, if `attr` is one of `props`.
+/// Applies an inclusive range to a matching schema property.
+///
+/// # Examples
+///
+/// ```
+/// use serde_json::{json, Map};
+///
+/// let mut props = Map::new();
+/// props.insert("score".to_owned(), json!({}));
+///
+/// apply_range(&mut props, ("score", 0, 100));
+///
+/// assert_eq!(props["score"]["minimum"], json!(0));
+/// assert_eq!(props["score"]["maximum"], json!(100));
+/// ```
 fn apply_range(props: &mut Map<String, Value>, (attr, min, max): (&str, i32, i32)) {
     if let Some(p) = props.get_mut(attr) {
         p["minimum"] = json!(min);
@@ -273,6 +376,22 @@ fn apply_range(props: &mut Map<String, Value>, (attr, min, max): (&str, i32, i32
     }
 }
 
+/// Generates JSON Schema artifacts for all supported OCSF classes and optionally checks for drift.
+///
+/// In check mode, reports an error when generated schemas are missing, outdated, or stale.
+/// Otherwise, writes the generated schemas and removes stale schema artifacts.
+///
+/// # Arguments
+///
+/// * `check` - When `true`, checks for drift without modifying the schemas directory.
+///
+/// # Examples
+///
+/// ```no_run
+/// generate(true)?;
+/// # Ok::<(), anyhow::Error>(())
+/// ```
+pub fn generate(check: bool) -> Result<()> {
 pub fn generate(check: bool) -> Result<()> {
     let schemas_dir = crate::workspace_root().join("schemas");
     if !check {

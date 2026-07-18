@@ -16,6 +16,30 @@ const CLASSES: &[&str] = &[
     "cloud_resources_inventory_info",
 ];
 
+/// Fetches JSON data from the specified URL.
+///
+/// # Errors
+///
+/// Returns an error if the request fails or the response body is not valid JSON.
+///
+/// # Examples
+///
+/// ```no_run
+/// # fn main() -> anyhow::Result<()> {
+/// let document = fetch("https://schema.ocsf.io/1.8.0/classes/File");
+/// let document = document?;
+/// assert!(document.is_object());
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # Parameters
+///
+/// * `url` - The URL to request.
+///
+/// # Returns
+///
+/// The parsed JSON response.
 fn fetch(url: &str) -> Result<Value> {
     let body: Value = ureq::get(url)
         .call()
@@ -24,6 +48,15 @@ fn fetch(url: &str) -> Result<Value> {
     Ok(body)
 }
 
+/// Writes a JSON value as pretty-printed text relative to the workspace root.
+///
+/// # Examples
+///
+/// ```
+/// # use serde_json::json;
+/// write("target/example.json", &json!({ "status": "ok" }))?;
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 fn write(path: &str, value: &Value) -> Result<()> {
     let p = crate::workspace_root().join(path);
     if let Some(dir) = p.parent() {
@@ -33,7 +66,23 @@ fn write(path: &str, value: &Value) -> Result<()> {
     Ok(())
 }
 
-/// Collect `object_type` references from a compiled class/object definition.
+/// Collects the object type names referenced by a compiled class or object definition.
+///
+/// # Examples
+///
+/// ```
+/// let definition = serde_json::json!({
+///     "attributes": {
+///         "account": { "object_type": "account" },
+///         "user": { "object_type": "user" }
+///     }
+/// });
+///
+/// assert_eq!(
+///     object_refs(&definition),
+///     ["account".to_owned(), "user".to_owned()].into_iter().collect()
+/// );
+/// ```
 fn object_refs(def: &Value) -> BTreeSet<String> {
     let mut refs = BTreeSet::new();
     if let Some(attrs) = def.get("attributes").and_then(Value::as_object) {
@@ -46,6 +95,23 @@ fn object_refs(def: &Value) -> BTreeSet<String> {
     refs
 }
 
+/// Synchronizes the configured OCSF schema classes and referenced objects into the conformance directory.
+///
+/// Existing managed conformance trees are cleared before downloading. The generated artifacts include
+/// base and full API and JSON Schema definitions, plus a report describing object references.
+///
+/// # Errors
+///
+/// Returns an error if the managed files cannot be removed, downloaded, parsed, serialized, or written.
+///
+/// # Examples
+///
+/// ```no_run
+/// fn main() -> anyhow::Result<()> {
+///     sync()?;
+///     Ok(())
+/// }
+/// ```
 pub fn sync() -> Result<()> {
     let api = format!("https://schema.ocsf.io/api/{VERSION}");
     let js = format!("https://schema.ocsf.io/schema/{VERSION}");

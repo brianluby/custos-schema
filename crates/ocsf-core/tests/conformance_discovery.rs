@@ -51,7 +51,14 @@ fn software_info_matches_oracle() {
     );
 }
 
-#[test]
+/// Verifies that `CloudResourcesInventoryInfo` conforms to the structural and activity identifier oracle.
+///
+/// # Examples
+///
+/// ```
+/// cloud_resources_inventory_info_matches_oracle();
+/// ```
+/// #[test]
 fn cloud_resources_inventory_info_matches_oracle() {
     assert_class_matches::<CloudResourcesInventoryInfo>("cloud_resources_inventory_info");
     assert_enum_matches(
@@ -100,6 +107,22 @@ const DISCOVERY_CLASSES: &[&str] = &[
     "cloud_resources_inventory_info",
 ];
 
+/// Verifies that an attribute's known values match the oracle for every Discovery class.
+///
+/// # Examples
+///
+/// ```
+/// assert_discovery_enum_matches(&[1, 2, 3], "status_id");
+/// ```
+///
+/// # Panics
+///
+/// Panics if the known values differ from the oracle for any Discovery class.
+///
+/// # Arguments
+///
+/// * `known` - The expected enumeration values.
+/// * `attr` - The attribute whose enumeration values are checked.
 fn assert_discovery_enum_matches(known: &[i32], attr: &str) {
     for class in DISCOVERY_CLASSES {
         let oracle = Oracle::class_full(class);
@@ -136,6 +159,21 @@ fn discovery_risk_level_id_reuses_objects_enum() {
 // InventoryInfo (class 5001): full sample lifecycle.
 // ---------------------------------------------------------------------------
 
+/// Creates a representative inventory information event for testing.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let event = sample_inventory_info();
+
+/// assert_eq!(event.type_uid(), 500102);
+
+/// ```
 fn sample_inventory_info() -> InventoryInfo {
     InventoryInfo::new(
         1_752_000_000_000,
@@ -203,6 +241,13 @@ fn inventory_info_profile_requirement_is_conditional() {
     );
 }
 
+/// Verifies that an `InventoryInfo` event preserves its value through JSON serialization and deserialization.
+///
+/// # Examples
+///
+/// ```
+/// inventory_info_roundtrips_through_json();
+/// ```
 #[test]
 fn inventory_info_roundtrips_through_json() {
     let ev = sample_inventory_info();
@@ -234,6 +279,18 @@ fn inventory_info_roundtrips_unknown_fields() {
 // UserInventory (class 5003): full sample lifecycle.
 // ---------------------------------------------------------------------------
 
+/// Builds a representative user inventory event for conformance tests.
+///
+/// # Examples
+///
+/// ```
+/// let event = sample_user_inventory();
+/// assert_eq!(event.user.as_ref().and_then(|user| user.name.as_deref()), Some("jdoe"));
+/// ```
+///
+/// # Returns
+///
+/// A user inventory event with a log activity and an informational severity.
 fn sample_user_inventory() -> UserInventory {
     UserInventory::new(
         1_752_000_000_000,
@@ -302,6 +359,19 @@ fn user_inventory_roundtrips_through_json() {
 // requires a `device`; its `sbom` field carries `Sbom` (Task 7).
 // ---------------------------------------------------------------------------
 
+/// Builds a representative software inventory event with package and SBOM details.
+///
+/// # Examples
+///
+/// ```
+/// let event = sample_software_info();
+/// assert!(event.package.is_some());
+/// assert!(event.sbom.is_some());
+/// ```
+///
+/// # Returns
+///
+/// A populated software inventory event for the `left-pad` package.
 fn sample_software_info() -> SoftwareInfo {
     let mut ev = SoftwareInfo::new(
         1_752_000_000_000,
@@ -386,6 +456,21 @@ fn software_info_roundtrips_through_json() {
 // table]. `CloudResourcesInventoryInfo::new` takes no required class object.
 // ---------------------------------------------------------------------------
 
+/// Builds a representative cloud resources inventory event containing a resource.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let event = sample_cloud_resources_inventory_info();
+
+/// assert!(event.resources.is_some());
+
+/// ```
 fn sample_cloud_resources_inventory_info() -> CloudResourcesInventoryInfo {
     let mut ev = CloudResourcesInventoryInfo::new(
         1_752_000_000_000,

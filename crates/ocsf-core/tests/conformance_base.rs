@@ -50,8 +50,18 @@ fn oracle_jsonschema_rejects_garbage() {
     );
 }
 
-/// Extract the string message from a `catch_unwind` panic payload, whether it
-/// was raised as `&'static str` or a formatted `String`.
+/// Converts a supported panic payload into its string message.
+///
+/// # Panics
+///
+/// Panics if `payload` contains neither a string slice nor a `String`.
+///
+/// # Examples
+///
+/// ```
+/// let payload: Box<dyn std::any::Any + Send> = Box::new("panic message");
+/// assert_eq!(panic_message(payload), "panic message");
+/// ```
 fn panic_message(payload: Box<dyn std::any::Any + Send>) -> String {
     if let Some(s) = payload.downcast_ref::<&str>() {
         (*s).to_string()

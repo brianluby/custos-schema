@@ -149,10 +149,26 @@ impl FindingInfo {
 }
 
 impl Validate for FindingInfo {
-    /// The `finding_info` object carries no oracle `at_least_one`/`just_one`
-    /// constraint (`uid` is a plain required field enforced by the type
-    /// system). Runs the extension-key collision check and recurses into the
-    /// constrained typed child `product`.
+    /// Validates the finding metadata and any nested product information.
+    ///
+    /// Reports collisions between extension fields and modeled fields, and includes
+    /// validation errors from the nested `product` value when present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let finding = FindingInfo {
+    ///     uid: "finding-1".to_owned(),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// assert!(finding.validate().is_valid());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A validation report containing errors for invalid extension fields or nested
+    /// product data.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
@@ -297,9 +313,24 @@ impl ResourceDetails {
 }
 
 impl Validate for ResourceDetails {
-    /// Enforces the oracle's `resource_details` constraint (`at_least_one` of
-    /// `name`, `uid`) and the extension-key collision check, then recurses
-    /// into the constrained typed children (`group`, `owner`).
+    /// Validates the resource details and any nested group or owner.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let resource = ResourceDetails {
+    ///     name: Some("example-resource".to_owned()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let report = resource.validate();
+    /// assert!(report.is_valid());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A validation report containing errors for missing identifiers, extension-key
+    /// collisions, or invalid nested values.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);
@@ -398,9 +429,14 @@ impl Compliance {
 }
 
 impl Validate for Compliance {
-    /// The `compliance` object carries no oracle `at_least_one`/`just_one`
-    /// constraint. Runs the extension-key collision check and recurses into
-    /// each constrained typed `checks` entry.
+    /// Validates the compliance object and any nested checks.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let report = Compliance::default().validate();
+    /// assert!(report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);
@@ -475,9 +511,19 @@ impl Check {
 }
 
 impl Validate for Check {
-    /// The `check` object carries no oracle `at_least_one`/`just_one`
-    /// constraint. Runs the extension-key collision check and recurses into
-    /// the constrained typed child `resource`.
+    /// Validates the check and any associated resource.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let check = Check::default();
+    /// assert!(check.validate().is_valid());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A validation report containing errors for extension-key collisions or invalid
+    /// nested resource data.
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_other_collisions(&self.other, Self::FIELD_NAMES, "", &mut r);

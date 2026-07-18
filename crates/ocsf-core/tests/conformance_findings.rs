@@ -101,6 +101,29 @@ const FINDING_CLASSES: &[&str] = &[
     "application_security_posture_finding",
 ];
 
+/// Verifies that an enum vocabulary matches the oracle for every finding class.
+
+///
+
+/// # Arguments
+
+///
+
+/// * `known` - The enum values to compare with the oracle.
+
+/// * `attr` - The finding attribute containing the enum vocabulary.
+
+///
+
+/// # Examples
+
+///
+
+/// ```rust,ignore
+
+/// assert_finding_enum_matches(&FindingStatusId::KNOWN, "status_id");
+
+/// ```
 fn assert_finding_enum_matches(known: &[i32], attr: &str) {
     for class in FINDING_CLASSES {
         let oracle = Oracle::class_full(class);
@@ -147,6 +170,23 @@ fn finding_impact_id_matches_oracle() {
 // JSON-Schema oracle, profile-conditional requirement).
 // ---------------------------------------------------------------------------
 
+/// Constructs a representative vulnerability finding for conformance tests.
+
+///
+
+/// # Examples
+
+///
+
+/// ```
+
+/// let finding = sample_vf();
+
+/// assert_eq!(finding.class_uid, 2002);
+
+/// assert_eq!(finding.finding_info.uid, "f-1");
+
+/// ```
 fn sample_vf() -> VulnerabilityFinding {
     VulnerabilityFinding::new(
         1_752_000_000_000,
@@ -314,6 +354,15 @@ fn detection_finding_type_uid_is_correct() {
 // serde round-trip), mirroring the VulnerabilityFinding coverage above.
 // ---------------------------------------------------------------------------
 
+/// Builds a representative compliance finding for conformance tests.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_cf();
+/// assert_eq!(finding.finding_info.uid, "f-1");
+/// ```
+fn sample_cf() -> ComplianceFinding {
 fn sample_cf() -> ComplianceFinding {
     ComplianceFinding::new(
         1_752_000_000_000,
@@ -376,6 +425,15 @@ fn compliance_finding_roundtrips_through_json() {
 // serde round-trip).
 // ---------------------------------------------------------------------------
 
+/// Creates a representative detection finding for conformance tests.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_df();
+/// assert_eq!(finding.type_uid(), 200401);
+/// ```
+fn sample_df() -> DetectionFinding {
 fn sample_df() -> DetectionFinding {
     DetectionFinding::new(
         1_752_000_000_000,
@@ -440,6 +498,14 @@ fn detection_finding_roundtrips_through_json() {
 // sample here also supplies a valid `vulnerabilities` entry.
 // ---------------------------------------------------------------------------
 
+/// Creates a valid application security posture finding sample.
+///
+/// # Examples
+///
+/// ```
+/// let finding = sample_aspf();
+/// assert!(finding.vulnerabilities.is_some());
+/// ```
 fn sample_aspf() -> ApplicationSecurityPostureFinding {
     let mut f = ApplicationSecurityPostureFinding::new(
         1_752_000_000_000,
@@ -532,6 +598,20 @@ fn vulnerability_finding_roundtrips_unknown_fields() {
 //      (`Metadata::new(Product::default())`).
 // ---------------------------------------------------------------------------
 
+/// Builds a valid vulnerability finding with the specified activity.
+///
+/// # Examples
+///
+/// ```
+/// let finding = vf_with_activity(VulnerabilityFindingActivityId::Other);
+/// assert_eq!(finding.type_uid(), 200299);
+/// ```
+///
+/// `activity` determines the finding's activity identifier and type UID.
+///
+/// # Parameters
+///
+/// * `activity` - Activity identifier to assign to the finding.
 fn vf_with_activity(activity: VulnerabilityFindingActivityId) -> VulnerabilityFinding {
     VulnerabilityFinding::new(
         1_752_000_000_000,

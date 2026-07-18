@@ -21,19 +21,27 @@ pub trait OcsfClass {
     /// derive the default `type_uid`.
     fn activity_id_value(&self) -> i32;
 
-    /// The event's `type_uid`: `CLASS_UID * 100 + activity_id`.
+    /// Computes the OCSF type identifier from the class and activity identifiers.
     ///
-    /// The OCSF `type_uid` formula (`class_uid * 100 + activity_id`) presumes
-    /// a two-digit activity space, so an `activity_id_value` outside
-    /// `0..=99` (negative *or* `> 99`) is clamped to activity `0` here. An
-    /// out-of-range activity cannot mint a valid `type_uid`, and — critically
-    /// — must not be allowed to mint a *colliding* one: without the upper
-    /// clamp, activity `100` on class `2002` would compute `200300`, the
-    /// exact `type_uid` of class `2003`'s activity `0`. Clamping keeps an
-    /// out-of-range value pinned to `class_uid * 100`, which belongs to no
-    /// other class. The wire value itself stays lossless (`Unrecognized` is
-    /// preserved through serde); [`crate::validation::check_uids`] separately
-    /// records a validation error for the out-of-range `activity_id`.
+    /// Activity identifiers outside `0..=99` are treated as `0`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// struct Event;
+    ///
+    /// impl OcsfClass for Event {
+    ///     const CLASS_UID: u32 = 2002;
+    ///     const CATEGORY_UID: u32 = 2;
+    ///     const CLASS_NAME: &'static str = "example";
+    ///
+    ///     fn activity_id_value(&self) -> i32 {
+    ///         1
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(Event.type_uid(), 200201);
+    /// ```
     fn type_uid(&self) -> u32 {
         let activity = self.activity_id_value();
         let activity = if (0..=99).contains(&activity) {

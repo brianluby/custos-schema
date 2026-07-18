@@ -186,6 +186,14 @@ impl OcsfClass for UserInventory {
     const CATEGORY_UID: u32 = 5;
     const CLASS_NAME: &'static str = "user_inventory";
 
+    /// Converts the inventory activity identifier to its normalized numeric value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let activity_id = UserInventoryActivityId::Collect;
+    /// assert_eq!(i32::from(activity_id), 2);
+    /// ```
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -252,9 +260,23 @@ impl UserInventory {
         "user",
     ];
 
-    /// Construct a `UserInventory` from its required attributes, deriving
-    /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
-    /// and `activity_id`. Every optional attribute starts unset.
+    /// Constructs a user inventory record from its required attributes.
+    ///
+    /// The constructor initializes optional attributes as unset, sets the OCSF
+    /// category and class identifiers, and derives the type identifier from the
+    /// class and activity identifiers.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let inventory = UserInventory::new(
+    ///     todo!(),
+    ///     UserInventoryActivityId::Log,
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    /// );
+    /// ```
     pub fn new(
         time: Timestamp,
         activity_id: UserInventoryActivityId,
@@ -325,6 +347,14 @@ impl UserInventory {
 }
 
 impl Validate for UserInventory {
+    /// Validates the inventory record and collects any errors and warnings in a validation report.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # let inventory: UserInventory = todo!();
+    /// let report = inventory.validate();
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(

@@ -56,7 +56,15 @@ impl Product {
         "url_string",
     ];
 
-    /// Construct a `Product` with only `name` set; all other fields default.
+    /// Constructs a `Product` with the specified name and default values for all other fields.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let product = Product::named("trivy");
+    /// assert_eq!(product.name.as_deref(), Some("trivy"));
+    /// assert!(product.vendor_name.is_none());
+    /// ```
     pub fn named(name: impl Into<String>) -> Self {
         Self {
             name: Some(name.into()),
@@ -66,9 +74,21 @@ impl Product {
 }
 
 impl Validate for Product {
-    /// Enforces the oracle's `product` constraint (`at_least_one` of `name`,
-    /// `uid`; from `conformance/api/objects/product.base.json`) and the
-    /// extension-key collision check.
+    /// Validates the product's required identity fields and extension keys.
+    ///
+    /// # Returns
+    ///
+    /// A validation report that is invalid when both `name` and `uid` are absent
+    /// or when an extension key collides with a modeled field name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let product = Product::default();
+    /// let report = product.validate();
+    ///
+    /// assert!(!report.is_valid());
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         r.at_least_one(&[("name", self.name.is_some()), ("uid", self.uid.is_some())]);

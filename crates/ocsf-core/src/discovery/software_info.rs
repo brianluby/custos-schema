@@ -192,6 +192,14 @@ impl OcsfClass for SoftwareInfo {
     const CATEGORY_UID: u32 = 5;
     const CLASS_NAME: &'static str = "software_info";
 
+    /// Converts the activity identifier to its numeric OCSF value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let activity_id = SoftwareInfoActivityId::Collect;
+    /// assert_eq!(i32::from(activity_id), 2);
+    /// ```
     fn activity_id_value(&self) -> i32 {
         i32::from(self.activity_id)
     }
@@ -260,9 +268,22 @@ impl SoftwareInfo {
         "unmapped",
     ];
 
-    /// Construct a `SoftwareInfo` from its required attributes, deriving
-    /// `class_uid`/`category_uid`/`type_uid` from the [`OcsfClass`] constants
-    /// and `activity_id`. Every optional attribute starts unset.
+    /// Constructs a software information record from its required attributes.
+    ///
+    /// The constructor derives the class, category, and type identifiers and leaves
+    /// all optional attributes unset.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let software = SoftwareInfo::new(
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    ///     todo!(),
+    /// );
+    /// ```
     pub fn new(
         time: Timestamp,
         activity_id: SoftwareInfoActivityId,
@@ -335,6 +356,15 @@ impl SoftwareInfo {
 }
 
 impl Validate for SoftwareInfo {
+    /// Validates the software information record and reports any consistency, nesting, range, collision, or recommendation issues.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # let software_info: SoftwareInfo = todo!();
+    /// let report = software_info.validate();
+    /// let _ = report;
+    /// ```
     fn validate(&self) -> ValidationReport {
         let mut r = ValidationReport::new();
         check_uids(
