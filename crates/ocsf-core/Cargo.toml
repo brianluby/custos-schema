@@ -1,0 +1,20 @@
+[package]
+name = "ocsf-core"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Hand-modeled OCSF 1.8.0 types: findings and inventory classes for ASPM use"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+schemars.workspace = true
+chrono = { version = "0.4", optional = true, default-features = false, features = ["std"] }
+
+[features]
+chrono = ["dep:chrono"]
+
+[dev-dependencies]
+jsonschema = "0.26"

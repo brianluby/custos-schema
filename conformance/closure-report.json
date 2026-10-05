@@ -1,0 +1,643 @@
+{
+  "account": [
+    "cloud",
+    "user"
+  ],
+  "actor": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "evidences",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "advisory": [
+    "vulnerability"
+  ],
+  "affected_code": [
+    "vulnerability"
+  ],
+  "affected_package": [
+    "vulnerability"
+  ],
+  "agent": [
+    "databucket",
+    "device",
+    "network_endpoint",
+    "network_proxy",
+    "resource_details"
+  ],
+  "analysis_target": [
+    "anomaly_analysis"
+  ],
+  "analytic": [
+    "analytic",
+    "finding_info"
+  ],
+  "anomaly": [
+    "anomaly_analysis"
+  ],
+  "anomaly_analysis": [
+    "detection_finding"
+  ],
+  "api": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "evidences",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "application": [
+    "application_security_posture_finding"
+  ],
+  "assessment": [
+    "compliance"
+  ],
+  "attack": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "finding_info",
+    "inventory_info",
+    "related_event",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "auth_factor": [
+    "idp"
+  ],
+  "authorization": [
+    "actor",
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "autonomous_system": [
+    "network_endpoint",
+    "network_proxy"
+  ],
+  "baseline": [
+    "anomaly_analysis"
+  ],
+  "certificate": [
+    "digital_signature",
+    "sso",
+    "tls"
+  ],
+  "check": [
+    "compliance"
+  ],
+  "cis_control": [
+    "remediation"
+  ],
+  "cloud": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "compliance": [
+    "application_security_posture_finding",
+    "compliance_finding"
+  ],
+  "container": [
+    "cloud_resources_inventory_info",
+    "device",
+    "evidences",
+    "network_endpoint",
+    "network_proxy",
+    "process",
+    "request",
+    "response"
+  ],
+  "cve": [
+    "advisory",
+    "malware",
+    "vulnerability"
+  ],
+  "cvss": [
+    "cve"
+  ],
+  "cwe": [
+    "advisory",
+    "cve",
+    "vulnerability"
+  ],
+  "d3f_tactic": [
+    "d3fend"
+  ],
+  "d3f_technique": [
+    "d3fend"
+  ],
+  "d3fend": [
+    "mitigation"
+  ],
+  "database": [
+    "cloud_resources_inventory_info",
+    "evidences"
+  ],
+  "databucket": [
+    "cloud_resources_inventory_info",
+    "evidences"
+  ],
+  "device": [
+    "application_security_posture_finding",
+    "auth_factor",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "evidences",
+    "inventory_info",
+    "logger",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "device_hw_info": [
+    "device",
+    "network_endpoint",
+    "network_proxy"
+  ],
+  "digital_signature": [
+    "file"
+  ],
+  "display": [
+    "device_hw_info"
+  ],
+  "dns_query": [
+    "evidences"
+  ],
+  "edge": [
+    "graph"
+  ],
+  "email": [
+    "evidences"
+  ],
+  "encryption_details": [
+    "databucket",
+    "file"
+  ],
+  "enrichment": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "environment_variable": [
+    "process"
+  ],
+  "epss": [
+    "cve"
+  ],
+  "evidences": [
+    "compliance_finding",
+    "detection_finding"
+  ],
+  "extension": [
+    "metadata"
+  ],
+  "feature": [
+    "product"
+  ],
+  "file": [
+    "affected_code",
+    "databucket",
+    "email",
+    "evidences",
+    "job",
+    "malware",
+    "process",
+    "script",
+    "win/win_service"
+  ],
+  "finding_info": [
+    "application_security_posture_finding",
+    "compliance_finding",
+    "detection_finding",
+    "vulnerability_finding"
+  ],
+  "fingerprint": [
+    "affected_package",
+    "application_security_posture_finding",
+    "certificate",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "container",
+    "detection_finding",
+    "digital_signature",
+    "file",
+    "idp",
+    "inventory_info",
+    "network_endpoint",
+    "network_proxy",
+    "package",
+    "script",
+    "software_component",
+    "software_info",
+    "tls",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "firewall_rule": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "gpu_info": [
+    "device_hw_info"
+  ],
+  "graph": [
+    "application",
+    "databucket",
+    "finding_info",
+    "resource_details"
+  ],
+  "group": [
+    "api",
+    "application",
+    "database",
+    "databucket",
+    "device",
+    "network_endpoint",
+    "network_proxy",
+    "policy",
+    "resource_details",
+    "table",
+    "user"
+  ],
+  "http_header": [
+    "email",
+    "http_request",
+    "http_response"
+  ],
+  "http_request": [
+    "evidences"
+  ],
+  "http_response": [
+    "evidences"
+  ],
+  "idp": [
+    "actor",
+    "cloud_resources_inventory_info"
+  ],
+  "image": [
+    "container",
+    "device"
+  ],
+  "ja4_fingerprint": [
+    "evidences"
+  ],
+  "job": [
+    "evidences"
+  ],
+  "kb_article": [
+    "compliance",
+    "remediation",
+    "vulnerability"
+  ],
+  "key_value_object": [
+    "account",
+    "application",
+    "compliance",
+    "container",
+    "databucket",
+    "file",
+    "finding_info",
+    "image",
+    "ldap_person",
+    "metadata",
+    "related_event",
+    "resource_details",
+    "service",
+    "win/win_service"
+  ],
+  "keyboard_info": [
+    "device_hw_info"
+  ],
+  "kill_chain_phase": [
+    "finding_info",
+    "related_event"
+  ],
+  "ldap_person": [
+    "user"
+  ],
+  "location": [
+    "device",
+    "ldap_person",
+    "network_endpoint",
+    "network_proxy"
+  ],
+  "logger": [
+    "metadata"
+  ],
+  "long_string": [
+    "script"
+  ],
+  "malware": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "malware_scan_info": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "metadata": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "metric": [
+    "cvss"
+  ],
+  "mitigation": [
+    "attack"
+  ],
+  "network_connection_info": [
+    "evidences"
+  ],
+  "network_endpoint": [
+    "evidences"
+  ],
+  "network_interface": [
+    "device"
+  ],
+  "network_proxy": [
+    "network_endpoint",
+    "network_proxy"
+  ],
+  "node": [
+    "graph"
+  ],
+  "object": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "file",
+    "inventory_info",
+    "process",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "observable": [
+    "application_security_posture_finding",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "related_event",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "observation": [
+    "anomaly",
+    "baseline"
+  ],
+  "organization": [
+    "cloud",
+    "device",
+    "reporter",
+    "user"
+  ],
+  "os": [
+    "advisory",
+    "device",
+    "kb_article",
+    "network_endpoint",
+    "network_proxy"
+  ],
+  "package": [
+    "sbom",
+    "software_info",
+    "vulnerability"
+  ],
+  "policy": [
+    "agent",
+    "application_security_posture_finding",
+    "assessment",
+    "authorization",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "inventory_info",
+    "software_info",
+    "user_inventory",
+    "vulnerability_finding"
+  ],
+  "port_info": [
+    "network_interface"
+  ],
+  "process": [
+    "actor",
+    "evidences",
+    "process"
+  ],
+  "process_entity": [
+    "process",
+    "win/win_service"
+  ],
+  "product": [
+    "advisory",
+    "cve",
+    "file",
+    "finding_info",
+    "kb_article",
+    "logger",
+    "metadata",
+    "related_event",
+    "sbom",
+    "software_info",
+    "transformation_info"
+  ],
+  "programmatic_credential": [
+    "user"
+  ],
+  "related_event": [
+    "finding_info"
+  ],
+  "remediation": [
+    "affected_code",
+    "affected_package",
+    "application_security_posture_finding",
+    "compliance_finding",
+    "detection_finding",
+    "vulnerability"
+  ],
+  "reporter": [
+    "metadata"
+  ],
+  "reputation": [
+    "enrichment",
+    "observable"
+  ],
+  "request": [
+    "api"
+  ],
+  "resource_details": [
+    "application_security_posture_finding",
+    "check",
+    "cloud_resources_inventory_info",
+    "compliance_finding",
+    "detection_finding",
+    "evidences",
+    "vulnerability_finding"
+  ],
+  "response": [
+    "api"
+  ],
+  "rule": [
+    "affected_code"
+  ],
+  "san": [
+    "certificate",
+    "tls"
+  ],
+  "sbom": [
+    "application",
+    "software_info"
+  ],
+  "scim": [
+    "idp"
+  ],
+  "script": [
+    "evidences"
+  ],
+  "service": [
+    "api"
+  ],
+  "session": [
+    "actor",
+    "network_connection_info",
+    "process"
+  ],
+  "software_component": [
+    "sbom"
+  ],
+  "sso": [
+    "idp"
+  ],
+  "sub_technique": [
+    "attack"
+  ],
+  "table": [
+    "cloud_resources_inventory_info"
+  ],
+  "tactic": [
+    "attack"
+  ],
+  "technique": [
+    "attack"
+  ],
+  "timespan": [
+    "advisory",
+    "kb_article",
+    "metadata",
+    "observation"
+  ],
+  "tls": [
+    "evidences"
+  ],
+  "tls_extension": [
+    "tls"
+  ],
+  "token": [
+    "api"
+  ],
+  "trait": [
+    "finding_info",
+    "related_event"
+  ],
+  "transformation_info": [
+    "metadata"
+  ],
+  "url": [
+    "application",
+    "email",
+    "evidences",
+    "file",
+    "http_request"
+  ],
+  "user": [
+    "actor",
+    "affected_code",
+    "application",
+    "databucket",
+    "device",
+    "evidences",
+    "file",
+    "job",
+    "ldap_person",
+    "network_endpoint",
+    "network_proxy",
+    "process",
+    "resource_details",
+    "user_inventory"
+  ],
+  "vendor_attributes": [
+    "application_security_posture_finding",
+    "compliance_finding",
+    "detection_finding",
+    "vulnerability_finding"
+  ],
+  "vulnerability": [
+    "application_security_posture_finding",
+    "detection_finding",
+    "vulnerability_finding"
+  ],
+  "win/reg_key": [
+    "evidences"
+  ],
+  "win/reg_value": [
+    "evidences"
+  ],
+  "win/win_service": [
+    "evidences",
+    "process"
+  ]
+}

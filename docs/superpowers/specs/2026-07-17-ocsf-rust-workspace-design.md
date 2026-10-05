@@ -122,7 +122,11 @@ sets are taken from the 1.8.0 schema files.
 
 Module layout mirrors OCSF: `ocsf_core::findings`, `ocsf_core::discovery`,
 `ocsf_core::objects`, `ocsf_core::base` (metadata, observables, shared
-enums), `ocsf_core::profiles`.
+enums). Profile support did not get a separate `ocsf_core::profiles` module
+(chosen implementation): typed profile attributes live as ordinary optional
+fields directly on the classes/objects that declare them, and the
+`cloud`-profile conditional requirement is enforced by
+`validation::check_cloud_profile` rather than by a dedicated profiles type.
 
 ## Modeling Conventions
 
@@ -144,8 +148,11 @@ enums), `ocsf_core::profiles`.
   `#[serde(flatten)] other: serde_json::Map<String, Value>` — lenient
   ingest, lossless round-trip. Generated JSON Schemas set
   `additionalProperties: true` accordingly.
-- **Construction.** Constructors take OCSF-required fields; optional fields
-  via immutable `with_*` builders returning `Self`.
+- **Construction.** Constructors take OCSF-required fields. Optional fields
+  are `pub` and set via struct-update syntax against `..Default::default()`
+  (chosen implementation; superseded the originally planned immutable
+  `with_*` builders — see `crates/ocsf-core/tests/conformance_findings.rs`'s
+  `sample_vf()` for the pattern in practice).
 - **Validation.** `validate()` per event class aggregates all findings into
   a `ValidationReport { errors, warnings }` (no early exit). Errors:
   missing required attributes, datatype violations, explicit OCSF
